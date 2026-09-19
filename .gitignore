@@ -1,27 +1,60 @@
-# Python environments and generated files
-.venv/
-venv/
-env/
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
+*$py.class
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-*.egg-info/
+.pyre/
+.hypothesis/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging and build outputs
 build/
 dist/
+*.egg-info/
+.eggs/
+*.egg
+pip-wheel-metadata/
 
-# Local IDE settings
-.idea/
-.vscode/
+# Coverage and test outputs
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
 
-# Secrets and local configuration
+# Local configuration and secrets
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 
-# OS files
+# IDE and notebook state
+.idea/
+.vscode/
+.ipynb_checkpoints/
+
+# Local model weights (download separately)
+/model/
+
+# Local documents and generated RAG artifacts; retain directory placeholders
+/data/raw/*
+!/data/raw/.gitkeep
+/data/processed/*
+!/data/processed/.gitkeep
+/vector_db/*
+!/vector_db/.gitkeep
+
+# Logs and OS files
+*.log
 .DS_Store
 Thumbs.db
+Desktop.ini
