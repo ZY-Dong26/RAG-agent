@@ -1,4 +1,4 @@
-# Python bytecode and caches
+# Python 编译生成的字节码与工具缓存
 __pycache__/
 *.py[cod]
 *$py.class
@@ -8,13 +8,13 @@ __pycache__/
 .pyre/
 .hypothesis/
 
-# Virtual environments
+# 本地 Python 虚拟环境，不随源码提交
 .venv/
 venv/
 env/
 ENV/
 
-# Packaging and build outputs
+# 打包、构建及安装过程中生成的文件
 build/
 dist/
 *.egg-info/
@@ -22,7 +22,7 @@ dist/
 *.egg
 pip-wheel-metadata/
 
-# Coverage and test outputs
+# 测试覆盖率报告及自动化测试环境
 .coverage
 .coverage.*
 htmlcov/
@@ -30,22 +30,22 @@ coverage.xml
 .tox/
 .nox/
 
-# Local configuration and secrets
+# 本地配置与密钥；仅允许提交不含真实密钥的示例文件
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 
-# IDE and notebook state
+# 编辑器个人配置与交互式笔记本检查点
 .idea/
 .vscode/
 .ipynb_checkpoints/
 
-# Local model weights (download separately)
+# 本地模型权重：体积较大，在每台机器上单独准备
 /model/
 
-# Local documents and generated RAG artifacts; retain directory placeholders
+# 原始文档、解析结果与向量索引保留在本地；保留 .gitkeep 以跟踪目录结构
 /data/raw/*
 !/data/raw/.gitkeep
 /data/processed/*
@@ -53,7 +53,7 @@ coverage.xml
 /vector_db/*
 !/vector_db/.gitkeep
 
-# Logs and OS files
+# 运行日志与操作系统生成的辅助文件
 *.log
 .DS_Store
 Thumbs.db

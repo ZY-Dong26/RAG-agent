@@ -1,12 +1,24 @@
-# Direct dependencies pinned to the local working environment (Python 3.12).
-# GPU-specific PyTorch builds should be installed separately when needed.
+# 直接依赖固定为当前本地环境使用的版本（Python 3.12）。
+# 如需 GPU 加速，请按本机驱动单独安装匹配的 PyTorch 构建版本。
+# 读取 PDF 基本信息和文字层；云端解析前也用它核对原文件页数。
 pypdf==6.18.1
+# 递归文本切分工具，把正文切成适合检索的小块。
 langchain-text-splitters==1.1.2
+# 深度学习计算框架，为本地向量模型提供计算能力。
 torch==2.11.0
+# 加载和调用文本向量模型，生成句子或段落的向量。
 sentence-transformers==6.0.1
+# 提供模型结构和分词器等基础组件。
 transformers==5.17.0
+# 提供模型仓库访问与模型文件管理工具。
 huggingface_hub==1.31.0
+# 数值数组工具，用于准备 FAISS 接收的向量数据。
 numpy==2.5.3
+# 本地向量索引与相似度检索；此版本的索引计算使用 CPU。
 faiss-cpu==1.15.1
+# 用于调用兼容 OpenAI 协议的云端大模型接口。
 openai==3.14.1
+# 读取 .env 配置文件，将密钥与业务代码分离。
 python-dotenv==1.2.3
+# HTTP 客户端，用于 MinerU 任务创建、查询以及文件上传和下载。
+httpx==0.28.1

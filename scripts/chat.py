@@ -14,10 +14,12 @@ chat.py —— 命令行问答入口（常驻 REPL）
 import sys
 from pathlib import Path
 
-# scripts/ 不是包，把项目根目录加进导入路径才能 from src import xxx
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# scripts 只负责终端交互；把 src 加入路径后调用 rag_agent 的公共问答服务
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from src import generator, retriever
+from rag_agent.qa.generator import Generator
+from rag_agent.qa.retriever import Retriever
+from rag_agent.qa.service import RAGService
 
 EXIT_WORDS = {"exit", "quit", "q", "退出", "再见"}
 
@@ -25,15 +27,16 @@ EXIT_WORDS = {"exit", "quit", "q", "退出", "再见"}
 def main():
     # 1. 一次性加载：模型 + 索引（最耗时的部分，整个会话只做一次）
     print("正在加载 embedding模型 + FAISS索引（首次约几秒，请稍等）...")
-    ret = retriever.Retriever()
+    ret = Retriever()
 
     # 2. 创建云端LLM客户端（API Key 缺失时在这里给出明确指引）
     try:
-        gen = generator.Generator()
+        gen = Generator()
     except RuntimeError as e:
         print(f"\n[错误] {e}")
         sys.exit(1)
 
+    service = RAGService(retriever=ret, generator=gen)
     print("\nRAG 命令行问答已就绪。输入 exit 退出。\n")
 
     while True:
@@ -51,12 +54,13 @@ def main():
 
         try:
             # 检索 → 生成（模型和索引已在内存，每问一次只算向量不重载）
-            hits = ret.retrieve(question)
+            result = service.ask(question)
+            hits = result.hits
             if not hits:
                 print("向量库中没有找到相关内容。\n")
                 continue
 
-            reply = gen.generate(question, hits)
+            reply = result.answer
 
             # 打印回答 + 引用来源（可溯源）
             print(f"\n回答: {reply}\n")
