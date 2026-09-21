@@ -17,21 +17,36 @@ from pathlib import Path
 # scripts 只负责终端交互；把 src 加入路径后调用 rag_agent 的公共问答服务
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from rag_agent.qa.generator import Generator
-from rag_agent.qa.retriever import Retriever
-from rag_agent.qa.service import RAGService
+from rag_agent.common.progress import configure_progress, report, stage
+
+# 先输出启动提示，再导入可能耗时的依赖，避免运行窗口长时间空白。
+if __name__ == "__main__":
+    configure_progress()
+
+with stage("加载运行依赖"):
+    from rag_agent.qa.generator import Generator
+    from rag_agent.qa.retriever import Retriever
+    from rag_agent.qa.service import RAGService
+
 
 EXIT_WORDS = {"exit", "quit", "q", "退出", "再见"}
 
 
 def main():
     # 1. 一次性加载：模型 + 索引（最耗时的部分，整个会话只做一次）
+    """启动终端问答：加载依赖一次，逐轮调用服务；退出词或 Ctrl+C 结束会话。"""
     print("正在加载 embedding模型 + FAISS索引（首次约几秒，请稍等）...")
-    ret = Retriever()
+    try:
+        with stage("加载 FAISS 索引和本地 Embedding 模型"):
+            ret = Retriever()
+    except (RuntimeError, ValueError, OSError) as error:
+        print(f"[启动失败] {error}；请先运行 scripts/build_index.py", flush=True)
+        return
 
     # 2. 创建云端LLM客户端（API Key 缺失时在这里给出明确指引）
     try:
-        gen = Generator()
+        with stage("检查 LLM 配置并创建客户端"):
+            gen = Generator()
     except RuntimeError as e:
         print(f"\n[错误] {e}")
         sys.exit(1)

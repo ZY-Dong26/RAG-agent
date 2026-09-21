@@ -16,14 +16,22 @@ import argparse
 import sys
 from pathlib import Path
 
-# 直接运行 scripts 下的文件时，先把项目根目录加入模块搜索路径。
+# 直接运行 scripts 下的文件时，先把项目根目录下的 src 加入模块搜索路径。
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from rag_agent.indexing import builder
+from rag_agent.common.progress import configure_progress, report, stage
+
+# 先输出启动提示，再导入可能耗时的依赖，避免运行窗口长时间空白。
+if __name__ == "__main__":
+    configure_progress()
+
+with stage("加载运行依赖"):
+    from rag_agent.indexing import builder
+
 
 
 def parse_documents(paths=None, resubmit=False):
-    """兼容解析调试入口：只解析指定 PDF，不建立向量索引。"""
+    """提供可导入的解析包装函数；parse_documents.py 已直接调用 builder，不依赖本脚本。"""
     return builder.parse_documents(paths, resubmit=resubmit)
 
 
@@ -42,7 +50,9 @@ if __name__ == "__main__":
                         help="从候选索引移除已不在 data/raw 的旧文档")
     args = parser.parse_args()
     try:
-        build_index(force=args.force, strict=args.strict, prune_missing=args.prune_missing)
+        report("[建库] 模式：" + ("严格模式" if args.strict else "允许部分成功"))
+        with stage("知识库构建；结束后请查看 build_report.json"):
+            build_index(force=args.force, strict=args.strict, prune_missing=args.prune_missing)
     except (RuntimeError, ValueError, OSError) as error:
         print(f"建库失败: {error}", file=sys.stderr)
         sys.exit(1)

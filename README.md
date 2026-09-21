@@ -208,7 +208,7 @@ frontend/
 └── README.md                           # 后续网页/桌面界面的边界说明
 ```
 
-核心包不依赖命令行输入输出。`scripts/chat.py` 和未来前端都通过 `rag_agent.qa.service.RAGService` 调用问答流程；浏览器前端以后可在独立 API 层包装该服务，不应直接读取 FAISS 文件或调用 MinerU。
+核心业务不读取终端输入，但部分模块仍会打印进度。`scripts/chat.py` 和未来前端都通过 `rag_agent.qa.service.RAGService` 调用问答流程；浏览器前端以后可在独立 API 层包装该服务，不应直接读取 FAISS 文件或调用 MinerU。
 
 ```powershell
 # 离线测试：模拟云端，不使用 API Key、不上传 PDF、不加载真实模型
@@ -220,3 +220,99 @@ frontend/
 源码、示例配置和测试可提交；真实环境文件、模型、PDF、解析缓存和索引被 Git 忽略。当前还未加入检索低分过滤、重排序和系统化答案评测。
 
 协议参考：[MinerU 官方云端 API](https://mineru.net/doc/docs/index_en/)。云端调用的账号额度和服务政策以账号页面为准。
+
+## 学习阅读顺序与生成文件
+
+建议按下面顺序阅读，不需要一次看完所有模块：
+
+1. `scripts/`：三个启动入口，先了解解析、建库、问答分别做什么。
+2. `src/rag_agent/ingestion/`：MinerU 配置、任务恢复、结构化结果适配。
+3. `src/rag_agent/indexing/`：切分、向量化、单文档产物复用和索引发布。
+4. `src/rag_agent/qa/`：检索、提示词构造与回答生成。
+5. `src/rag_agent/common/` 与 `tests/`：文件保存、并发保护和离线验证。
+
+数据目录与代码分开：
+
+```text
+data/raw/                  # 保留原始 PDF
+data/processed/mineru/     # 保留最新解析：任务记录、原始 ZIP、解压结果、documents.json
+vector_db/                 # 手动建库后生成索引与按文档保存的向量产物
+```
+
+2026-09-21 已清理旧版解析目录、旧索引、按文档向量产物和汇总中间文件。保留六份原始 PDF、五份成功解析结果及一份失败任务记录；失败记录用于避免普通运行重复创建云端任务。当前需要先手动建库，再启动问答：
+
+```powershell
+.\.venv\Scripts\python.exe scripts/build_index.py
+.\.venv\Scripts\python.exe scripts/chat.py
+```
+
+默认建库允许部分成功；成功文档复用本地解析结果，失败文档会单独报告。`--strict` 才要求所有文件成功。不要删除最新解析目录内的 `manifest.json` 或原始 ZIP：缓存校验和恢复会使用它们。
+
+
+## 在 PyCharm 中手动运行
+
+统一选择项目解释器 `D:\01_Workspaces\RAG-agent\.venv\Scripts\python.exe`，
+工作目录设为 `D:\01_Workspaces\RAG-agent`。以脚本路径方式建立三个 Python 运行配置：
+
+| 配置名称 | 脚本路径（相对项目根目录） | 参数 | 用途 |
+|---|---|---|---|
+| 解析检查 | `scripts/parse_documents.py` | 留空，或 `--file "data/raw/基准测试报告.pdf"` | 只解析和验收，不计算向量；指定文件中任一失败则退出码为 1 |
+| 建立知识库 | `scripts/build_index.py` | 通常留空 | 默认允许部分解析失败，复用未变化文档的向量，发布可用文档 |
+| 知识库问答 | `scripts/chat.py` | 留空 | 读取已发布索引，输入问题后调用云端 LLM；输入 `exit` 退出 |
+
+三个脚本自行设置 `src` 导入路径，不需要手动设置 PYTHONPATH。为了编辑器识别导入，
+可将 `src` 标记为 Sources Root。密钥由项目根目录 `.env` 读取，不用写进运行参数。
+不要把 `src/rag_agent` 内部模块当作日常启动入口；部分 `__main__` 是保留的教学演示，
+其中切块和 FAISS 演示会写文件，且不走完整的增量建库业务。
+
+### 运行顺序
+
+1. 把 PDF 放入 `data/raw/`，准备好 `.env` 和本地模型。
+2. 可选：运行解析检查，单独观察文档页数、表格和失败原因。
+3. 运行建立知识库；无需提前单独解析，builder 已包含解析阶段。
+4. 检查 `data/processed/build_report.json`，区分全部成功和部分成功。
+5. 运行知识库问答。问答启动后索引驻留内存，更新知识库后需重启问答脚本。
+
+建库调用链：`scripts/build_index.py → indexing/builder.py → ingestion（按需解析）
+→ chunker → embedder（按需向量化）→ artifact_store → faiss_store`。
+问答调用链：`scripts/chat.py → qa/service.py → retriever → generator`。
+解析结果、逐文档向量和活动索引是三层不同产物；复用向量不等于追加修改活动 FAISS。
+向量计算或磁盘写入异常仍会中止构建，默认部分成功主要针对逐文档解析失败。
+
+### PyCharm 终端中的常用命令（PowerShell）
+
+```powershell
+# 只看参数说明，不创建云端任务
+.\.venv\Scripts\python.exe scripts/parse_documents.py --help
+.\.venv\Scripts\python.exe scripts/build_index.py --help
+
+# 普通建库：允许部分成功，尽量复用解析和向量产物
+.\.venv\Scripts\python.exe scripts/build_index.py
+
+# 严格建库：当前 PDF 任一解析失败时不发布
+.\.venv\Scripts\python.exe scripts/build_index.py --strict
+
+# 强制重算向量：仍复用 MinerU 解析缓存
+.\.venv\Scripts\python.exe scripts/build_index.py --force
+
+# 明确移除源文件已缺失的旧文档；它不会清理磁盘上的历史版本
+.\.venv\Scripts\python.exe scripts/build_index.py --prune-missing
+
+# 启动交互问答
+.\.venv\Scripts\python.exe scripts/chat.py
+
+# 离线回归测试：不上传 PDF、不调用实际模型；-B 避免生成编译缓存
+.\.venv\Scripts\python.exe -B -m unittest discover -s tests -v
+```
+
+`--resubmit --file "data/raw/文件名.pdf"` 仅在明确需要新云端任务时用于解析入口，
+会再次上传文件，不能用作普通重试参数。普通运行会恢复已有任务。
+如果 `data/raw` 已完全为空，当前建库会提前停止；`--prune-missing` 不用于清空整个知识库。
+
+### 运行时的进度提示
+
+三个启动脚本会立即显示依赖加载提示。解析显示缓存复用、任务提交、上传、云端状态变化、下载和验收；建库显示扫描数量、复用数量、切块、模型加载、向量化及发布；聊天显示模型加载、检索和等待 LLM 回答。
+
+耗时阶段每 20 秒输出一条等待提示，结束时显示耗时；这是程序仍在等待的提示，不代表云端提供了百分比进度。外层总任务和内层步骤可能各有一条等待提示。云端状态只在变化时打印，避免每次轮询都刷屏。
+
+进度功能使用标准库 logging，由 `common/progress.py` 统一管理；不会输出 API Token、签名地址或模型请求正文，也不会增加自动重新提交次数。问答启动时若缺少索引，会提示先建库。
