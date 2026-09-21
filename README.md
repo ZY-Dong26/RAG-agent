@@ -1,5 +1,4 @@
-# RAG-agent
-
+# RAG-agent（正在完善中......）
 PDF 知识库命令行问答：**MinerU 云端解析 → 本地切块 → Qwen3 Embedding → FAISS → 云端 LLM 回答**。
 
 MinerU 在建库时接收完整 PDF，执行 OCR 和结构化解析；结果保存在本地。日常问答复用本地索引，不再次上传 PDF。LLM 会接收用户问题及检索到的文本。当前仍是文本 RAG，保存图片不等于支持图片理解。
