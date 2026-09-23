@@ -10,7 +10,7 @@
 .\.venv\Scripts\python.exe scripts\debug_chat.py --open
 ```
 
-每轮结果写入 `debug_runs/<时间_问题>/`：
+每轮结果写入 `data/outputs/debug/<时间_问题>/`：
 
 - `trace.json`：结构化检索结果、实际模型请求、回答和相邻文本块。
 - `report.html`：便于人工阅读的本地诊断页。
@@ -22,4 +22,4 @@
 - `devtools/rag_inspector/`
 - `scripts/debug_chat.py`
 - `tests/test_rag_inspector.py`
-- `debug_runs/`
+- `data/outputs/debug/`

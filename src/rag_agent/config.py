@@ -29,7 +29,7 @@ RAW_PDF_DIR = BASE_DIR / "data" / "raw"            # 原始PDF输入（放这里
 PROCESSED_DIR = BASE_DIR / "data" / "processed"    # 中间产物目录（chunks.json等）
 CHUNKS_FILE = PROCESSED_DIR / "chunks.json"        # 切分结果文件
 
-VECTOR_DB_DIR = BASE_DIR / "vector_db"             # 向量库持久化目录（FAISS索引+chunk元信息）
+VECTOR_DB_DIR = BASE_DIR / "data" / "vector_db"             # 向量库持久化目录（FAISS索引+chunk元信息）
 
 # ========== 文本切分参数 ==========
 CHUNK_SIZE = 800        # 每个文本块最大字符数

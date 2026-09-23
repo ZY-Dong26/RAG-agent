@@ -1,0 +1,1010 @@
+[
+  {
+    "question_id": 1,
+    "question_type": "单文档事实抽取题",
+    "question": "王鑫林那篇综述把RAG方法归成哪四类？",
+    "ground_truth": "分块优化、检索增强、上下文压缩、知识图谱融合。",
+    "reference_context_ids": [
+      "文档1"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "必须列出四类方法；不得加入原文分类之外的类别。"
+  },
+  {
+    "question_id": 2,
+    "question_type": "单文档事实抽取题",
+    "question": "王鑫林等人为什么认为大模型需要接入外部知识？",
+    "ground_truth": "训练语料具有封闭性且更新滞后；面对动态更新的信息或专业领域长尾知识时，大模型的回答可能偏离事实。RAG通过整合外部知识库扩展知识范围。",
+    "reference_context_ids": [
+      "文档1"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "必须说明训练知识更新滞后及外部知识库的作用；不得声称RAG能彻底消除错误。"
+  },
+  {
+    "question_id": 3,
+    "question_type": "单文档事实抽取题",
+    "question": "《大模型推理优化关键技术及应用实践研究报告（2026）》把推理优化技术分成哪三个层面？",
+    "ground_truth": "模型层面、引擎层面、系统层面。",
+    "reference_context_ids": [
+      "文档2"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "三个层面均须答出，名称准确。"
+  },
+  {
+    "question_id": 4,
+    "question_type": "单文档事实抽取题",
+    "question": "那份2026年推理优化报告提出要协同兼顾哪三个目标？",
+    "ground_truth": "效果、性能、成本。",
+    "reference_context_ids": [
+      "文档2"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "必须包含效果、性能、成本三个目标，不得替换为训练准确率等其他指标。"
+  },
+  {
+    "question_id": 5,
+    "question_type": "单文档事实抽取题",
+    "question": "数据库创新态势研究把数据库创新放在哪三个维度讨论？",
+    "ground_truth": "数据结构、部署方式、应用场景。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "三个维度均须列出；不能把具体产品当成维度。"
+  },
+  {
+    "question_id": 6,
+    "question_type": "单文档事实抽取题",
+    "question": "向量数据库除了增查改删，文中强调它还有什么能力？",
+    "ground_truth": "针对向量数据进行快速相似性搜索，并支持多种面向向量的最近邻搜索算法。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "必须提到快速相似性搜索；不得只回答CRUD。"
+  },
+  {
+    "question_id": 7,
+    "question_type": "单文档事实抽取题",
+    "question": "数据库研究中，2022年全球云数据库市场占比首次突破多少？",
+    "ground_truth": "首次突破50%。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "数值须为50%，并保留“突破”的含义；不得写成恰好等于50%。"
+  },
+  {
+    "question_id": 8,
+    "question_type": "单文档事实抽取题",
+    "question": "《大模型基准测试体系研究报告》说基准测试的目标是什么？",
+    "ground_truth": "通过设计合理的测试任务和数据集，对模型能力进行全面、量化的评估。",
+    "reference_context_ids": [
+      "文档4"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "必须包含测试任务、数据集和全面量化评估三个要点。"
+  },
+  {
+    "question_id": 9,
+    "question_type": "单文档事实抽取题",
+    "question": "基准测试报告提出的“方升”体系包含哪两项测试方法？",
+    "ground_truth": "“方升”大模型基准测试体系和“方升”自适应动态测试方法。",
+    "reference_context_ids": [
+      "文档4"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "须区分测试体系与自适应动态测试方法，不得合并成一个名称。"
+  },
+  {
+    "question_id": 10,
+    "question_type": "单文档事实抽取题",
+    "question": "阿里研究院白皮书把大语言模型训练分成哪三个阶段？",
+    "ground_truth": "预训练、监督微调（SFT）、基于人类反馈的强化学习（RLHF）。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "三个阶段都要答出，顺序与原文一致。"
+  },
+  {
+    "question_id": 11,
+    "question_type": "单文档事实抽取题",
+    "question": "白皮书用哪三个字概括通用预训练、对齐和行业语料的特征？",
+    "ground_truth": "通用预训练语料为“广”，SFT和RLHF等对齐语料为“齐”，行业特定领域语料为“专”。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "必须将“广”“齐”“专”分别对应正确的语料用途。"
+  },
+  {
+    "question_id": 12,
+    "question_type": "单文档事实抽取题",
+    "question": "白皮书说图像—文本对由什么组成？",
+    "ground_truth": "一张图像和一段描述该图像内容的文本。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "须同时包含图像和描述图像内容的文本；不能混同视频—文本对。"
+  },
+  {
+    "question_id": 13,
+    "question_type": "单文档事实抽取题",
+    "question": "袁乐等人的综述把RAG核心工作流程概括为哪三个环节？",
+    "ground_truth": "索引、检索、生成。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "三个环节均须答出，不得把六类优化策略误作核心流程。"
+  },
+  {
+    "question_id": 14,
+    "question_type": "单文档事实抽取题",
+    "question": "袁乐等人说，索引创建前的数据准备会把文本划分成什么？",
+    "ground_truth": "划分成更小、易于管理的“块”；划分依据包括语言模型的处理能力和上下文限制。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "简单",
+    "eval_criteria": "必须提到文本块及划分依据；不得说所有块都有固定长度。"
+  },
+  {
+    "question_id": 15,
+    "question_type": "多文档综合推理题",
+    "question": "如果要搭一个中文RAG，为什么既要处理好分块，也要关注向量检索能力？",
+    "ground_truth": "王鑫林等人把分块优化列为RAG方法之一；数据库研究指出，向量数据库支持向量数据的快速相似性搜索和最近邻搜索。前者关系到文档如何成为可检索片段，后者关系到如何从这些表示中找到相关内容。",
+    "reference_context_ids": [
+      "文档1",
+      "文档3"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "必须分别说明分块与向量相似性搜索的作用；不得声称某份文档指定了唯一实现方案。"
+  },
+  {
+    "question_id": 16,
+    "question_type": "多文档综合推理题",
+    "question": "把两篇RAG综述放一起看，它们的分类视角有什么不同？",
+    "ground_truth": "王鑫林等人按待解决的核心挑战归纳为分块优化、检索增强、上下文压缩、知识图谱融合四类；袁乐等人沿RAG工作流程讨论预检索、检索器、检索策略、索引、检索后和LLM增强六类优化。",
+    "reference_context_ids": [
+      "文档1",
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须准确说明两种分类视角及各自类别；不能把四类和六类说成同一套分类。"
+  },
+  {
+    "question_id": 17,
+    "question_type": "多文档综合推理题",
+    "question": "我们既要测RAG答案有没有依据，也要测模型整体能力，六份文档分别给了什么思路？",
+    "ground_truth": "袁乐等人将证据支持、文档覆盖、检索排序和生成质量等纳入RAG多维评估；基准测试报告主张设计合理的测试任务和数据集，对模型能力进行全面、量化的评估。",
+    "reference_context_ids": [
+      "文档4",
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "必须分别指出RAG的证据相关评估和基准测试的任务、数据集、量化评估；不得编造统一评分公式。"
+  },
+  {
+    "question_id": 18,
+    "question_type": "多文档综合推理题",
+    "question": "训练数据白皮书和RAG综述都谈知识供给，它们分别怎样应对知识不足？",
+    "ground_truth": "白皮书强调建设高质量训练语料，并讨论合成数据补充多模态与领域知识；袁乐等人的综述指出，RAG在生成时检索外部动态信息，补充模型内部知识并改善知识更新。",
+    "reference_context_ids": [
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须区分训练阶段的数据供给与生成阶段的外部检索；不得说两者可以互相完全替代。"
+  },
+  {
+    "question_id": 19,
+    "question_type": "多文档综合推理题",
+    "question": "为什么说RAG系统上线时，检索质量和推理服务效率都得看？",
+    "ground_truth": "RAG综述指出检索结果的相关性会影响生成内容的准确性与可靠性；推理优化报告把推理服务的目标概括为效果、性能、成本的协同优化，并涉及模型、引擎、系统多个层面。",
+    "reference_context_ids": [
+      "文档2",
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "必须给出检索质量对回答的影响，以及推理服务的效果、性能、成本目标；不得引入文档没有给出的性能承诺。"
+  },
+  {
+    "question_id": 20,
+    "question_type": "多文档综合推理题",
+    "question": "数据库研究与袁乐的RAG综述，分别如何描述索引或向量表示的价值？",
+    "ground_truth": "数据库研究强调向量数据库对向量数据进行快速相似性搜索；袁乐等人说明RAG将文本块向量化并创建索引，以便把用户查询与文本块比较，快速定位相关内容。",
+    "reference_context_ids": [
+      "文档3",
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "两个文档的要点都须出现；不能把向量数据库等同于RAG的全部流程。"
+  },
+  {
+    "question_id": 21,
+    "question_type": "多文档综合推理题",
+    "question": "白皮书说行业语料要“专”，那RAG综述提供了什么补充行业知识的方式？",
+    "ground_truth": "白皮书指出行业大模型需要具备专业深度的特定领域知识，如行业数据库和专业文档；RAG综述指出RAG可检索外部知识资源，将领域特定信息动态引入生成过程。",
+    "reference_context_ids": [
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须同时回答行业语料的专业性要求和RAG动态引入外部知识的方式；不得推断具体行业效果数值。"
+  },
+  {
+    "question_id": 22,
+    "question_type": "多文档综合推理题",
+    "question": "如果用户问最新的专业知识，仅扩大上下文窗口就够了吗？结合两篇RAG综述回答。",
+    "ground_truth": "王鑫林等人指出封闭且更新滞后的训练语料会使模型在动态信息和专业长尾知识上偏离事实；袁乐等人指出长上下文窗口不能完全弥补训练知识的固有缺陷，RAG可按需检索并引入最新外部信息。",
+    "reference_context_ids": [
+      "文档1",
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须说明训练知识更新问题及RAG动态检索的作用；不得断言长上下文完全无用。"
+  },
+  {
+    "question_id": 23,
+    "question_type": "多文档综合推理题",
+    "question": "做多模态RAG的数据准备时，白皮书和数据库研究分别能提供什么依据？",
+    "ground_truth": "白皮书说明多模态模型训练会使用图像—文本对、视频—文本对等标注数据；数据库研究指出向量数据库支持文本、图像、音视频等数据的嵌入处理与相似性搜索。",
+    "reference_context_ids": [
+      "文档3",
+      "文档5"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须分别指出多模态数据类型和向量数据库支持的处理、检索能力；不得说白皮书给出了RAG系统架构。"
+  },
+  {
+    "question_id": 24,
+    "question_type": "多文档综合推理题",
+    "question": "为什么评估集不能只看答案对不对，还要看检索到的材料？",
+    "ground_truth": "基准测试报告强调用合理任务和数据集全面、量化地评估模型；袁乐等人的综述把检索排序、证据支持、文档覆盖以及答案正确性、生成质量列为RAG评估的不同方面。",
+    "reference_context_ids": [
+      "文档4",
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须体现答案质量与检索证据是不同评估方面；不能杜撰两份文档共同规定的权重。"
+  },
+  {
+    "question_id": 25,
+    "question_type": "多文档综合推理题",
+    "question": "从数据库和推理服务两个角度看，AI应用落地要解决哪些不同问题？",
+    "ground_truth": "数据库研究关注向量数据管理、相似性检索，以及数据库支持模型训练与推理；推理优化报告关注在保障服务等级目标下，通过模型、引擎、系统等层面的优化协同兼顾效果、性能、成本。",
+    "reference_context_ids": [
+      "文档2",
+      "文档3"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须分别说明数据管理与推理服务的关注点；不得把数据库市场数据说成推理服务指标。"
+  },
+  {
+    "question_id": 26,
+    "question_type": "多文档综合推理题",
+    "question": "白皮书与基准测试报告分别怎样看待数据在模型开发中的作用？",
+    "ground_truth": "白皮书把数据与算法、算力并列为支撑大模型发展的三大基石，强调高质量训练数据；基准测试报告则使用测试任务和数据集对模型能力进行全面、量化评估。",
+    "reference_context_ids": [
+      "文档4",
+      "文档5"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "必须区分训练数据与评测数据集的用途；不得称两份文档使用同一数据集。"
+  },
+  {
+    "question_id": 27,
+    "question_type": "多文档综合推理题",
+    "question": "一个RAG系统同时遇到长文档难处理和线上成本压力，两份相关报告给了哪些方向？",
+    "ground_truth": "王鑫林等人将上下文压缩列为RAG方法类别，用于减少输入上下文中的冗余信息；推理优化报告提出在保障服务等级目标的前提下，从模型、引擎、系统等层面提升推理性能并降低运营成本。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须包含上下文压缩与推理服务的性能、成本目标；不得给出文档未规定的压缩率。"
+  },
+  {
+    "question_id": 28,
+    "question_type": "多文档综合推理题",
+    "question": "为什么用于中文RAG的测评集既要有专业问题，也要有拒答问题？请结合白皮书和RAG综述说明。",
+    "ground_truth": "白皮书指出行业应用需要具备专业深度的领域知识；RAG综述指出大模型面临幻觉和知识过时问题，RAG通过外部证据提高事实一致性。测评可据此检查专业知识回答及缺乏证据时是否避免无依据生成。",
+    "reference_context_ids": [
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须把专业领域知识需求与幻觉、证据问题联系起来；最后一句应是基于两文档的测评设计推论，不能伪称原文规定了拒答题型。"
+  },
+  {
+    "question_id": 29,
+    "question_type": "细节甄别题",
+    "question": "那篇数据库研究里，向量数据库是只有CRUD，还是还支持相似性搜索？",
+    "ground_truth": "两者都支持：向量数据库具备基本的增查改删（CRUD）操作，更重要的是具备针对向量数据的快速相似性搜索能力。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须同时说明CRUD和相似性搜索，不能把两者说成互斥。"
+  },
+  {
+    "question_id": 30,
+    "question_type": "细节甄别题",
+    "question": "文中说GPU数据库有哪两条路线？瓶颈提到的是哪一条？",
+    "ground_truth": "包括GPU加速型数据库和GPU内存型数据库。文中指出GPU加速型数据库将GPU作为CPU的协处理器或加速器，其性能瓶颈主要是GPU显存及CPU与GPU之间的I/O通道。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须区分两条路线，并把所述瓶颈对应到GPU加速型数据库。"
+  },
+  {
+    "question_id": 31,
+    "question_type": "细节甄别题",
+    "question": "AI for DB和DB for AI，哪个是用强化学习优化数据库Join顺序？",
+    "ground_truth": "属于AI for DB，即AI技术赋能数据库；文中举例说强化学习可用于优化Join操作的顺序选择。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "方向必须判为AI for DB，不能颠倒两种概念。"
+  },
+  {
+    "question_id": 32,
+    "question_type": "细节甄别题",
+    "question": "白皮书说中文语料短缺时，是所有中文语料都一样紧缺吗？",
+    "ground_truth": "不是。白皮书认为中文语料总量短缺有弥补途径，但中式价值观类语料重要且短缺，机器翻译不能弥补这类语料的缺口。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "必须区分一般中文语料与中式价值观类语料；不得说机器翻译可解决后者。"
+  },
+  {
+    "question_id": 33,
+    "question_type": "细节甄别题",
+    "question": "白皮书里“广”和“齐”分别对应预训练还是对齐？",
+    "ground_truth": "“广”对应学习各类世界知识的预训练语料；“齐”对应SFT和RLHF等对齐阶段所需的高质量人类反馈。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "两个字与阶段的对应关系必须正确。"
+  },
+  {
+    "question_id": 34,
+    "question_type": "细节甄别题",
+    "question": "视频—文本对与图像—文本对在白皮书中有什么区别？",
+    "ground_truth": "图像—文本对是一张图像及其内容描述；视频—文本对是一个短视频及其事件描述，后者还涉及时间序列和动态变化。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须说明载体及视频的时间序列、动态变化特征；不能把视频说成单张图片。"
+  },
+  {
+    "question_id": 35,
+    "question_type": "细节甄别题",
+    "question": "合成数据在白皮书中主要已经大规模替代真实数据做预训练了吗？",
+    "ground_truth": "没有。白皮书指出合成数据现阶段在预训练中占比不高，也未大规模替代真实数据；目前更多用于提升对齐阶段的数据获取效率。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "必须区分预训练现状和对齐阶段用途；不得说已全面取代真实数据。"
+  },
+  {
+    "question_id": 36,
+    "question_type": "细节甄别题",
+    "question": "袁乐等人说的预检索增强和检索后增强，各自处理什么？",
+    "ground_truth": "预检索增强在检索前处理输入查询，如关键词识别、意图提取；检索后增强对已检索结果进行筛选与重排序。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须按发生阶段正确对应查询处理与结果后处理。"
+  },
+  {
+    "question_id": 37,
+    "question_type": "细节甄别题",
+    "question": "RAG评估里，EM和MRR是测同一件事吗？",
+    "ground_truth": "不是。袁乐等人将精确匹配（EM）用于衡量答案一致性；MRR属于检索排序指标，关注相关结果的排序与定位效率。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "必须区分答案一致性与检索排序，不得把MRR解释为生成文本指标。"
+  },
+  {
+    "question_id": 38,
+    "question_type": "细节甄别题",
+    "question": "索引阶段和检索阶段，查询向量化用的嵌入模型需要怎样配合？",
+    "ground_truth": "袁乐等人指出，检索阶段处理用户查询时使用的嵌入模型一般与索引阶段相同，以保证向量表示的一致性和准确性。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须说明“一般相同”及其原因，不能改写为绝对必须相同。"
+  },
+  {
+    "question_id": 39,
+    "question_type": "细节甄别题",
+    "question": "推理优化报告里的模型层、引擎层和系统层，哪个层面包含批处理调度和显存管理？",
+    "ground_truth": "引擎层面。报告将批处理调度、显存管理和高性能算子等列为推理执行环节的引擎级优化。",
+    "reference_context_ids": [
+      "文档2"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "必须判断为引擎层面；不得将其归到模型压缩或最终服务体验。"
+  },
+  {
+    "question_id": 40,
+    "question_type": "细节甄别题",
+    "question": "推理优化报告说推理服务重点关注的，是训练阶段的离线计算密集，还是在线服务的响应？",
+    "ground_truth": "报告区分训练与推理：训练通常离线、长期且计算密集；在线推理更关注实时响应，核心诉求是效率、稳定与经济性。",
+    "reference_context_ids": [
+      "文档2"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须准确区分训练和在线推理的特点。"
+  },
+  {
+    "question_id": 41,
+    "question_type": "细节甄别题",
+    "question": "基准测试报告里的Chatbot Arena和AlpacaEval，评测方式有什么不同？",
+    "ground_truth": "报告称Chatbot Arena采用众包方式，通过匿名、随机化对战给模型排名；AlpacaEval使用强语言模型（如GPT-4）辅助评估。",
+    "reference_context_ids": [
+      "文档4"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须正确对应众包匿名对战与强模型辅助评估，不得互换。"
+  },
+  {
+    "question_id": 42,
+    "question_type": "细节甄别题",
+    "question": "王鑫林等人的四类RAG方法中，“上下文压缩”和“知识图谱融合”是一类吗？",
+    "ground_truth": "不是。两者在该综述中是并列的两类方法。",
+    "reference_context_ids": [
+      "文档1"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "必须说明是两个并列类别，不得合并。"
+  },
+  {
+    "question_id": 43,
+    "question_type": "文档不存在信息题",
+    "question": "这六份资料给出的2027年中文RAG系统市场规模是多少？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得用数据库市场规模或其他年份数字代替。"
+  },
+  {
+    "question_id": 44,
+    "question_type": "文档不存在信息题",
+    "question": "这些PDF有没有给出本测评集的官方GitHub仓库地址？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得编造仓库链接。"
+  },
+  {
+    "question_id": 45,
+    "question_type": "文档不存在信息题",
+    "question": "六份文档规定中文RAG必须使用哪款GPU、至少多少张卡？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不能把文中的硬件示例说成统一部署要求。"
+  },
+  {
+    "question_id": 46,
+    "question_type": "文档不存在信息题",
+    "question": "这六份文档有没有公布同一个RAG系统在本地的安装密码？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得生成或猜测密码。"
+  },
+  {
+    "question_id": 47,
+    "question_type": "文档不存在信息题",
+    "question": "报告指定的2028年中国向量数据库行业收入目标是多少亿元？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得引用其他年份的数据库市场数据作答。"
+  },
+  {
+    "question_id": 48,
+    "question_type": "文档不存在信息题",
+    "question": "白皮书列出的每家医院2026年可公开共享的患者病历数量分别是多少？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得虚构医院名单或病历数量。"
+  },
+  {
+    "question_id": 49,
+    "question_type": "文档不存在信息题",
+    "question": "这六份PDF给出了我们这套80题测评集的标准通过分数吗？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不能把论文中的某个实验分数当作本测评集门槛。"
+  },
+  {
+    "question_id": 50,
+    "question_type": "文档不存在信息题",
+    "question": "文档要求RAG每次回答最多只能检索几篇PDF？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得将方法中的示例数量解释为统一上限。"
+  },
+  {
+    "question_id": 51,
+    "question_type": "文档不存在信息题",
+    "question": "六份资料给出的2029年RAG知识库法定保存期限是几年？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得编造法规或年限。"
+  },
+  {
+    "question_id": 52,
+    "question_type": "文档不存在信息题",
+    "question": "这些文档公布了哪位用户在2026年9月23日向系统提过最多问题吗？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得虚构用户身份或行为记录。"
+  },
+  {
+    "question_id": 53,
+    "question_type": "文档不存在信息题",
+    "question": "这几篇文档有没有给出同一套中文RAG系统在六份PDF上的逐题运行日志？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得把论文实验结果当成该系统日志。"
+  },
+  {
+    "question_id": 54,
+    "question_type": "文档不存在信息题",
+    "question": "六份PDF指定了我们生成这套JSON时必须使用的随机种子吗？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得猜测随机种子。"
+  },
+  {
+    "question_id": 55,
+    "question_type": "文档不存在信息题",
+    "question": "这些资料给出了2027年1月某个指定模型的RAG幻觉率实测值吗？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得挪用其他实验、其他日期的数据。"
+  },
+  {
+    "question_id": 56,
+    "question_type": "文档不存在信息题",
+    "question": "六份文档是否公布了本次用户上传PDF的SHA-256校验值？",
+    "ground_truth": "文档中未提及。",
+    "reference_context_ids": [
+      "文档1",
+      "文档2",
+      "文档3",
+      "文档4",
+      "文档5",
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "只能回答文档中未提及；不得编造哈希值。"
+  },
+  {
+    "question_id": 57,
+    "question_type": "否定式问题",
+    "question": "王鑫林等人的四类方法里，数据库市场预测不属于其中一类吧？",
+    "ground_truth": "不属于。四类是分块优化、检索增强、上下文压缩和知识图谱融合。",
+    "reference_context_ids": [
+      "文档1"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须明确“不属于”并给出原文四类；不得把市场预测列入分类。"
+  },
+  {
+    "question_id": 58,
+    "question_type": "否定式问题",
+    "question": "推理优化报告是不是没有把“成本”列入核心目标？",
+    "ground_truth": "不是。报告明确提出效果、性能、成本的协同优化。",
+    "reference_context_ids": [
+      "文档2"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须纠正否定前提，明确成本是目标之一。"
+  },
+  {
+    "question_id": 59,
+    "question_type": "否定式问题",
+    "question": "数据库研究里的向量数据库不做相似性搜索，只负责存储，对吗？",
+    "ground_truth": "不对。文中明确强调向量数据库具有针对向量数据的快速相似性搜索能力。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须否定错误前提，并指出快速相似性搜索。"
+  },
+  {
+    "question_id": 60,
+    "question_type": "否定式问题",
+    "question": "AI for DB不包括数据库参数调优，是这样吗？",
+    "ground_truth": "不是。数据库研究将利用AI自动配置、调优数据库参数作为AI for DB的例子。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须纠正否定前提，明确参数调优属于AI赋能数据库。"
+  },
+  {
+    "question_id": 61,
+    "question_type": "否定式问题",
+    "question": "基准测试报告是否没有提到用数据集量化模型能力？",
+    "ground_truth": "提到了。报告指出，基准测试通过设计合理的测试任务和数据集，对模型能力进行全面、量化的评估。",
+    "reference_context_ids": [
+      "文档4"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须明确否定前提不成立，并答出任务、数据集和量化评估。"
+  },
+  {
+    "question_id": 62,
+    "question_type": "否定式问题",
+    "question": "白皮书是不是说大模型训练必须依赖用户个人信息？",
+    "ground_truth": "不是。白皮书明确指出，大模型训练阶段不依赖个人信息，对知识性内容和高质量专业语料的需求更强。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须说明训练阶段不依赖个人信息；不能延伸为所有阶段都不存在隐私风险。"
+  },
+  {
+    "question_id": 63,
+    "question_type": "否定式问题",
+    "question": "白皮书没有把RLHF算进大语言模型训练流程，对吗？",
+    "ground_truth": "不对。白皮书将基于人类反馈的强化学习（RLHF）列为第三阶段，并将SFT和RLHF统称为对齐阶段。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须明确RLHF属于流程，且正确说明其与对齐阶段的关系。"
+  },
+  {
+    "question_id": 64,
+    "question_type": "否定式问题",
+    "question": "袁乐等人的RAG流程不包含索引创建吗？",
+    "ground_truth": "包含。该综述把索引、检索和生成作为RAG核心工作流程，并单独说明索引创建。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须纠正否定前提，指出索引是核心流程之一。"
+  },
+  {
+    "question_id": 65,
+    "question_type": "否定式问题",
+    "question": "袁乐等人是不是认为上下文窗口变长后，RAG就完全没必要了？",
+    "ground_truth": "不是。综述指出长上下文窗口不能完全弥补知识更新等问题，RAG仍能按需注入外部证据，并与长上下文方法形成互补。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须否定“完全没必要”，并说明按需检索和互补关系。"
+  },
+  {
+    "question_id": 66,
+    "question_type": "否定式问题",
+    "question": "预检索增强不处理用户查询，对吗？",
+    "ground_truth": "不对。袁乐等人指出预检索增强通过关键词识别、意图提取等初步处理优化用户查询质量。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须说明预检索增强处理查询，不能误说它只处理已检索文档。"
+  },
+  {
+    "question_id": 67,
+    "question_type": "否定式问题",
+    "question": "数据库论文说2022年全球云数据库占比没有超过一半，是吗？",
+    "ground_truth": "不是。论文说2022年全球云数据库市场占比首次突破50%。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须准确否定前提，保留“首次突破50%”的表述。"
+  },
+  {
+    "question_id": 68,
+    "question_type": "否定式问题",
+    "question": "白皮书是不是没讨论合成数据用于对齐？",
+    "ground_truth": "讨论了。白皮书指出，合成数据目前多用于提升对齐阶段的数据获取效率，并讨论RLAIF等方式。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须纠正否定前提，说明合成数据在对齐阶段的作用。"
+  },
+  {
+    "question_id": 69,
+    "question_type": "否定式问题",
+    "question": "基准测试报告里，Chatbot Arena并不是靠匿名对战来排名吧？",
+    "ground_truth": "不是。报告描述Chatbot Arena采用众包方式，对模型进行匿名、随机化对战并据此排名。",
+    "reference_context_ids": [
+      "文档4"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须正确识别匿名、随机化对战这一方法。"
+  },
+  {
+    "question_id": 70,
+    "question_type": "否定式问题",
+    "question": "推理优化报告没有把“压缩—部署—推理—服务”视作推理内部环节，对吗？",
+    "ground_truth": "不对。报告明确把“压缩—部署—推理—服务”列为推理优化贯穿的四个环节。",
+    "reference_context_ids": [
+      "文档2"
+    ],
+    "difficulty": "中等",
+    "eval_criteria": "须否定错误前提，并按原顺序列出四个环节。"
+  },
+  {
+    "question_id": 71,
+    "question_type": "陷阱干扰题",
+    "question": "先别管数据库论文提到的2022年市场份额；王鑫林那篇RAG综述到底列了几类核心方法，分别是什么？",
+    "ground_truth": "四类：分块优化、检索增强、上下文压缩、知识图谱融合。",
+    "reference_context_ids": [
+      "文档1"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "只回答文档1的方法分类；不得混入数据库市场数字。"
+  },
+  {
+    "question_id": 72,
+    "question_type": "陷阱干扰题",
+    "question": "我看到白皮书里有GPT-1的训练数据数字，但现在只想知道推理优化报告的三个技术层面。",
+    "ground_truth": "模型层面、引擎层面、系统层面。",
+    "reference_context_ids": [
+      "文档2"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "三个层面必须准确；不得引用GPT训练数据规模。"
+  },
+  {
+    "question_id": 73,
+    "question_type": "陷阱干扰题",
+    "question": "不考虑RAG综述里的分块分类，数据库研究说GPU数据库主要分成哪两种？",
+    "ground_truth": "GPU加速型数据库和GPU内存型数据库。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须给出数据库研究的两条GPU数据库路线；不能回答RAG分块方法。"
+  },
+  {
+    "question_id": 74,
+    "question_type": "陷阱干扰题",
+    "question": "推理报告说要兼顾效果、性能、成本；但基准测试报告里，基准测试的直接目标是什么？",
+    "ground_truth": "通过合理的测试任务和数据集，对模型能力进行全面、量化的评估。",
+    "reference_context_ids": [
+      "文档4"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须回答基准测试目标；不得把推理优化的三个目标替代为答案。"
+  },
+  {
+    "question_id": 75,
+    "question_type": "陷阱干扰题",
+    "question": "数据库文章提到向量检索，不过白皮书中的“专”具体指哪类训练语料？",
+    "ground_truth": "用于行业大模型的特定领域知识语料，需要满足场景的专业需求并具备专业深度，例如行业数据库、专业文档和专业网站。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须解释“专”的训练语料含义；不得把向量检索能力作为定义。"
+  },
+  {
+    "question_id": 76,
+    "question_type": "陷阱干扰题",
+    "question": "先把白皮书里的SFT放一边。袁乐等人的RAG工作流程是哪三个环节？",
+    "ground_truth": "索引、检索、生成。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须回答RAG工作流程，不得混入SFT或RLHF训练阶段。"
+  },
+  {
+    "question_id": 77,
+    "question_type": "陷阱干扰题",
+    "question": "2022年云数据库占比那个数字很显眼，但数据库研究中AI for DB举了怎样优化Join顺序的例子？",
+    "ground_truth": "文中指出可用强化学习优化Join操作的顺序选择，并举出基于深度强化学习自动选择高效表连接顺序的做法。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须回答Join顺序优化方式；不得以云数据库市场占比作答。"
+  },
+  {
+    "question_id": 78,
+    "question_type": "陷阱干扰题",
+    "question": "RAG综述说长上下文和检索能互补。可我问的是：白皮书为什么认为中式价值观语料不能靠机器翻译补足？",
+    "ground_truth": "白皮书指出，即使翻译质量有保障，翻译仍会引入源语言的偏见，体现源语言的价值观，因此无法弥补中式价值观类语料的短缺。",
+    "reference_context_ids": [
+      "文档5"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须说明源语言偏见与价值观问题；不得转而讨论长上下文性能。"
+  },
+  {
+    "question_id": 79,
+    "question_type": "陷阱干扰题",
+    "question": "基准测试报告里提到了Chatbot Arena；袁乐等人的综述中，MRR归在哪一类评估指标？",
+    "ground_truth": "MRR属于检索排序指标，用于关注相关结果的排序与定位效率。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须将MRR归为检索排序指标；不得用Chatbot Arena的排名方式解释MRR。"
+  },
+  {
+    "question_id": 80,
+    "question_type": "陷阱干扰题",
+    "question": "不要把GPU加速型数据库的I/O瓶颈算进来。推理优化报告对线上推理核心诉求怎么说？",
+    "ground_truth": "线上服务通常要求实时响应，其核心诉求是效率、稳定与经济性。",
+    "reference_context_ids": [
+      "文档2"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须回答线上推理的诉求；不得混入GPU数据库的硬件瓶颈。"
+  },
+  {
+    "question_id": 81,
+    "question_type": "陷阱干扰题",
+    "question": "白皮书讲过合成视频。数据库论文里，向量数据库支持处理哪些模态的数据嵌入？",
+    "ground_truth": "文本、图像、音视频等数据的嵌入处理。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须按数据库论文回答支持的数据类型；不得把游戏引擎合成视频当作向量数据库功能。"
+  },
+  {
+    "question_id": 82,
+    "question_type": "陷阱干扰题",
+    "question": "不要用2026年推理报告的三层架构回答。基准测试报告说大模型测评体系涵盖哪些关键要素？",
+    "ground_truth": "涵盖测评指标、方法、数据集等关键要素。",
+    "reference_context_ids": [
+      "文档4"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须列出测评指标、方法和数据集；不得回答模型层、引擎层、系统层。"
+  },
+  {
+    "question_id": 83,
+    "question_type": "陷阱干扰题",
+    "question": "文中有RAG索引、也有数据库索引。这里问数据库研究：学习索引用机器学习模型预测什么？",
+    "ground_truth": "学习索引用机器学习模型预测数据项的位置或范围，而不是只依赖传统索引结构的固定规则。",
+    "reference_context_ids": [
+      "文档3"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须回答数据项的位置或范围；不得套用RAG文本块向量索引的说明。"
+  },
+  {
+    "question_id": 84,
+    "question_type": "陷阱干扰题",
+    "question": "先不谈白皮书里对合成数据的分类。袁乐等人说检索后增强主要怎么处理已检索结果？",
+    "ground_truth": "通过筛选、重排序等后处理，提高已检索内容的关联性与可靠性。",
+    "reference_context_ids": [
+      "文档6"
+    ],
+    "difficulty": "困难",
+    "eval_criteria": "须回答检索结果的筛选与重排序；不得列举合成数据类型。"
+  }
+]

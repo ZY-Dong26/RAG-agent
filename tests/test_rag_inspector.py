@@ -3,6 +3,10 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+import sys
+
+# 调试实现与核心包并列放在 src，直接运行测试时也能找到它们。
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from devtools.rag_inspector import RecordingClient, TraceRecorder, load_neighbor_chunks, write_trace_report
 
@@ -33,9 +37,9 @@ class RagInspectorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             generation = "a" * 32
-            directory = root / "vector_db" / "generations" / generation
+            directory = root / "data" / "vector_db" / "generations" / generation
             directory.mkdir(parents=True)
-            (root / "vector_db" / "current.json").write_text(
+            (root / "data" / "vector_db" / "current.json").write_text(
                 json.dumps({"generation": generation}), encoding="utf-8"
             )
             chunks = [
@@ -51,7 +55,7 @@ class RagInspectorTests(unittest.TestCase):
             recorder.record_request({"model": "demo", "messages": [{"role": "user", "content": "[1] 内容1"}]})
             recorder.record_answer("回答", 0.4)
             recorder.neighbors = load_neighbor_chunks(root, [hit], radius=1)
-            json_path, html_path = write_trace_report(recorder, root / "debug_runs")
+            json_path, html_path = write_trace_report(recorder, root / "data/outputs/debug")
 
             self.assertEqual([item["text"] for item in recorder.neighbors["1"]], ["内容0", "内容2"])
             self.assertTrue(json_path.exists())

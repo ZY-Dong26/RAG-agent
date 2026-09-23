@@ -90,6 +90,8 @@ class Generator:
         :param hits: Retriever.retrieve()的返回列表
         :return: 回答字符串（可能含[编号]引用标注）
         """
+        # 每次调用先清空用量，避免失败时误用上一题的数据；接口未返回 usage 时保留 None。
+        self.last_usage = None
         messages = self.build_prompt(query, hits)
 
         # OpenAI兼容接口的标准调用：服务端需要支持该协议和传入参数
@@ -99,6 +101,10 @@ class Generator:
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            self.last_usage = {name: getattr(usage, name, None) for name in
+                               ("prompt_tokens", "completion_tokens", "total_tokens")}
         return response.choices[0].message.content.strip()
 
 

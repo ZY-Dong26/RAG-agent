@@ -104,7 +104,7 @@ class RecordingClient:
 
 
 def _active_chunks_path(project_root: Path) -> Path | None:
-    vector_root = project_root / "vector_db"
+    vector_root = project_root / "data" / "vector_db"
     pointer = vector_root / "current.json"
     if pointer.exists():
         generation = json.loads(pointer.read_text(encoding="utf-8")).get("generation")

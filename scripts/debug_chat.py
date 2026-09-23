@@ -46,7 +46,7 @@ def _ask(question, retriever, generator, open_report=False):
     finally:
         generator.client = original_client
         recorder.neighbors = load_neighbor_chunks(PROJECT_ROOT, hits, radius=1)
-        _, html_path = write_trace_report(recorder, PROJECT_ROOT / "debug_runs")
+        _, html_path = write_trace_report(recorder, PROJECT_ROOT / "data/outputs/debug")
         print(f"\n诊断报告: {html_path.resolve()}")
         if open_report:
             webbrowser.open(html_path.resolve().as_uri())

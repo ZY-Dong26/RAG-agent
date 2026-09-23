@@ -1,0 +1,91 @@
+# 运行入口与命令速查
+
+```text
+scripts/
+├── parse_documents.py   # 只解析 PDF（MinerU 云端），不建向量库
+├── build_index.py       # 增量建库：解析 + 切块 + 向量化 + 发布索引
+├── chat.py              # 用当前索引做命令行问答
+├── evaluate.py          # 批量回答评测集并统计检索指标（无自动评分）
+└── debug_chat.py         # 交互问答，导出检索/提示词诊断报告
+```
+
+所有命令在项目根目录的 PowerShell 中执行，用项目自己的解释器，无需激活虚拟环境。首次使用顺序：**建库 → 问答 → 按需调试或评测**（单独解析是可选步骤，建库已包含）。各脚本都支持 `--help` 查看完整参数。
+
+## 1. 建库：build_index.py
+
+```powershell
+# 常用：增量建库，复用未变化文档的向量，允许部分失败
+.\.venv\Scripts\python.exe scripts/build_index.py
+```
+
+可选参数（可组合）：
+
+| 参数 | 作用 |
+|---|---|
+| `--strict` | 任一文档解析失败就不发布新索引 |
+| `--force` | 强制重新切块和算向量（仍复用 MinerU 解析缓存，不重新上传 PDF） |
+| `--prune-missing` | 从索引移除源 PDF 已缺失的文档（不删磁盘文件） |
+
+索引发布到 `data/vector_db/`，报告见 `data/processed/build_report.json`。
+
+## 2. 问答：chat.py
+
+```powershell
+.\.venv\Scripts\python.exe scripts/chat.py
+```
+
+无参数。输入问题后本地检索 + 云端生成；输入 `exit`/`quit`/`q`/`退出` 或 Ctrl+C 结束。重新建库后需重启本入口才会加载新索引。
+
+## 3. PDF 解析：parse_documents.py
+
+```powershell
+# 解析 data/raw/ 下全部 PDF，复用缓存
+.\.venv\Scripts\python.exe scripts/parse_documents.py
+
+# 只处理一份，或强制重新上传（会额外消耗 MinerU 额度）
+.\.venv\Scripts\python.exe scripts/parse_documents.py --file "data/raw/xxx.pdf" --resubmit
+```
+
+结果在 `data/processed/mineru/`，最近一次解析报告是 `data/processed/parse_report.json`。
+
+## 4. 批量评测：evaluate.py
+
+```powershell
+# 默认跑全量（84 题），结果写入新的时间戳目录
+.\.venv\Scripts\python.exe scripts/evaluate.py
+
+# 先校验题目格式与文档映射，不调用模型、不花费用
+.\.venv\Scripts\python.exe scripts/evaluate.py --validate-only
+```
+
+常用参数：
+
+| 参数 | 作用 |
+|---|---|
+| `--output <目录>` | 指定结果目录；目录存在且快照一致时跳过已做题目、续跑剩余；快照（数据集/索引/代码/模型/top_k）变了会拒绝混跑 |
+| `--limit N` | 本次最多跑 N 题（试跑用）；续跑时表示"本次再跑 N 题" |
+| `--top-k N` | 每题取前 N 个片段；改 K 必须换新目录 |
+| `--retry-failed` | 重跑状态为 error 的旧题（会再产生费用） |
+| `--dataset` / `--source-map` | 换用自定义评测集与文档映射 |
+
+续跑示例（接着上次没跑完的批次）：
+
+```powershell
+.\.venv\Scripts\python.exe scripts/evaluate.py --output "data/outputs/evaluation/testdata-baseline-20260923"
+```
+
+结果在 `data/outputs/evaluation/<批次>/`：`report.md`（逐题检索证据 + 回答）、`results.csv`（人工评分表）、`summary.json`（指标汇总）。Ctrl+C 中断后可续跑，未保存的那次请求可能已计费。
+
+## 5. 调试问答：debug_chat.py
+
+```powershell
+.\.venv\Scripts\python.exe scripts/debug_chat.py            # 问答并打印报告路径
+.\.venv\Scripts\python.exe scripts/debug_chat.py --open      # 每轮结束自动打开 HTML 报告
+```
+
+报告输出到 `data/outputs/debug/`。
+
+## PyCharm 运行配置
+
+- 解释器：`.venv\Scripts\python.exe`；工作目录：项目根目录。
+- Script path 选要运行的脚本；Parameters 栏只填脚本参数（如 `--limit 3 --output "..."`），普通建库/问答可留空。

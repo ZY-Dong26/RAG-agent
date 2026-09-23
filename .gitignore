@@ -50,11 +50,17 @@ coverage.xml
 !/data/raw/.gitkeep
 /data/processed/*
 !/data/processed/.gitkeep
-/vector_db/*
-!/vector_db/.gitkeep
+/data/vector_db/*
+!/data/vector_db/.gitkeep
 
 # 运行日志与操作系统生成的辅助文件
 *.log
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# 评测结果含原始资料、答案与提示词，仅保留本地
+/data/outputs/
+
+# 本地项目开发约定，不纳入 Git
+/AGENTS.md
