@@ -2,14 +2,12 @@
 参考答案、评分标准与文档映射只用于报告，绝不传入回答提示词。
 每题原子保存一次；恢复时校验配置快照，避免混合不同索引或模型的结果。
 """
-import csv
 import hashlib
 import json
-import math
 import time
-from collections import Counter
 from pathlib import Path
 
+from devtools.evaluation.exporter import export_results
 from rag_agent.common.files import atomic_json, read_json, exclusive_lock
 from rag_agent.common.progress import report, stage
 
@@ -59,82 +57,6 @@ def retrieval_metrics(hits, targets, k):
     return {"hit_at_k": int(rank is not None),
             "recall_at_k": len(targets.intersection(sources)) / len(targets),
             "reciprocal_rank_at_k": 1 / rank if rank else 0.0}
-
-
-def average(values):
-    """忽略缺失数据；没有可统计样本时返回 None，而不是误报为零。"""
-    values = [v for v in values if v is not None]
-    return sum(values) / len(values) if values else None
-
-
-def summarize(rows):
-    """汇总完成记录；检索成功但生成失败的题仍可参与检索指标。"""
-    metric_rows = [row for row in rows if row.get("metrics") is not None]
-    durations = sorted(row["total_seconds"] for row in rows)
-    def percentile(q):
-        """采用最近秩定义，保证小样本时结果可解释。"""
-        return durations[max(0, math.ceil(len(durations) * q) - 1)] if durations else None
-    return {
-        "attempted": len(rows), "answered": sum(row["status"] == "answered" for row in rows),
-        "success_rate": average([int(row["status"] == "answered") for row in rows]),
-        "status_counts": dict(Counter(row["status"] for row in rows)),
-        "retrieval_evaluated": sum(row["metrics"]["hit_at_k"] is not None for row in metric_rows),
-        "document_hit_at_k": average([row["metrics"]["hit_at_k"] for row in metric_rows]),
-        "document_recall_at_k": average([row["metrics"]["recall_at_k"] for row in metric_rows]),
-        "document_mrr_at_k": average([row["metrics"]["reciprocal_rank_at_k"] for row in metric_rows]),
-        "mean_retrieval_seconds": average([row.get("retrieval_seconds") for row in rows]),
-        "mean_generation_seconds": average([row.get("generation_seconds") for row in rows]),
-        "mean_total_seconds": average(durations), "p50_seconds": percentile(.5), "p95_seconds": percentile(.95),
-        "token_usage_reported_questions": sum(row.get("usage") is not None for row in rows),
-        "reported_tokens": {key: sum((row.get("usage") or {}).get(key) or 0 for row in rows)
-                            for key in ("prompt_tokens", "completion_tokens", "total_tokens")},
-        "questions_missing_target_sources": sum(bool(row.get("missing_sources")) for row in rows),
-    }
-
-
-def export_results(directory, rows, total):
-    """导出机器记录、Excel 可读 CSV 和人工逐题阅读的 Markdown。"""
-    directory = Path(directory)
-    summary = summarize(rows)
-    summary.update(dataset_questions=total, remaining=total-len(rows),
-                   metric_scope="文档级；K 是检索片段数，不代表正确段落命中；没有自动答案评分",
-                   latency_scope="不含初始化时间；包含本题接口等待，P50/P95 使用最近秩",
-                   usage_scope="仅统计接口实际返回的用量；缺失用量及中断请求可能未计入")
-    for field in ("question_type", "difficulty"):
-        summary["by_" + field] = {value: summarize([row for row in rows if row[field] == value])
-                                  for value in sorted({row[field] for row in rows})}
-    atomic_json(directory / "summary.json", summary)
-    with (directory / "results.jsonl").open("w", encoding="utf-8") as stream:
-        for row in rows:
-            stream.write(json.dumps(row, ensure_ascii=False) + "\n")
-    columns = ["question_id", "question_type", "difficulty", "question", "ground_truth", "answer",
-               "eval_criteria", "status", "retrieved_sources", "missing_sources", "hit_at_k", "recall_at_k",
-               "reciprocal_rank_at_k", "retrieval_seconds", "generation_seconds", "total_seconds",
-               "prompt_tokens", "completion_tokens", "total_tokens", "error", "人工评分", "人工备注"]
-    with (directory / "results.csv").open("w", encoding="utf-8-sig", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=columns)
-        writer.writeheader()
-        for row in rows:
-            item = {**row, **(row.get("metrics") or {}), **(row.get("usage") or {})}
-            item["retrieved_sources"] = "；".join(f"{h['metadata'].get('source')} 第{h['metadata'].get('page')}页" for h in row["hits"])
-            item["missing_sources"] = "；".join(row["missing_sources"])
-            # 避免资料文本在 Excel 中被解释为公式；原始 JSON 保留原文。
-            output = {key: item.get(key, "") for key in columns}
-            for key, value in output.items():
-                if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
-                    output[key] = "'" + value
-            writer.writerow(output)
-    lines = ["# RAG 批量评测结果", "", "此报告不含自动答案评分；请结合参考答案、评分标准和检索证据人工评阅。", ""]
-    for row in rows:
-        lines += [f"## 题目 {row['question_id']} · {row['question_type']} · {row['difficulty']}", "",
-                  f"**问题：** {row['question']}", "", f"**参考答案：** {row['ground_truth']}", "",
-                  f"**RAG 回答：** {row.get('answer') or '（无回答）'}", "", f"**评分标准：** {row['eval_criteria']}", "",
-                  f"状态：{row['status']}；耗时：{row['total_seconds']:.2f} 秒；缺失目标文档：{row['missing_sources']}", ""]
-        for hit in row["hits"]:
-            meta = hit["metadata"]
-            lines += [f"### 检索 [{meta.get('rank')}] {meta.get('source')} 第 {meta.get('page')} 页，相似度 {meta.get('score')}", "", hit["text"], ""]
-    (directory / "report.md").write_text("\n".join(lines), encoding="utf-8")
-    return summary
 
 
 def run_evaluation(rows, source_map, retriever, generator, directory, signature, k=5, limit=None, retry_failed=False):
@@ -210,5 +132,25 @@ def run_evaluation(rows, source_map, retriever, generator, directory, signature,
         finally:
             ordered = [results[str(row["question_id"])] for row in rows if str(row["question_id"]) in results]
             summary = export_results(directory, ordered, len(rows))
-        report(f"[评测结束] 已记录 {summary['attempted']}/{len(rows)} 题，回答成功 {summary['answered']} 题；结果：{directory}")
+        report(f"[评测结束] 已记录 {summary['attempted']}/{len(rows)} 题，回答成功 {summary['answered']} 题")
+        # 终端直接给出核心指标摘要，避免每次结束后还要翻 summary.json。
+        # 指标可能为 None（题目未标注目标文档），用占位符显示而不是伪造零分。
+        def pct(value):
+            """把 0~1 小数格式化为百分号字符串；None 显示为占位符。"""
+            return "—" if value is None else f"{value * 100:.1f}%"
+
+        def sec(value):
+            """秒数保留一位小数；None 显示为占位符。"""
+            return "—" if value is None else f"{value:.1f}s"
+
+        tokens = summary.get("reported_tokens") or {}
+        report(f"[检索] hit@k {pct(summary.get('document_hit_at_k'))} | "
+               f"recall@k {pct(summary.get('document_recall_at_k'))} | "
+               f"MRR {pct(summary.get('document_mrr_at_k'))}")
+        report(f"[延迟] 平均 {sec(summary.get('mean_total_seconds'))}，"
+               f"P50 {sec(summary.get('p50_seconds'))}，P95 {sec(summary.get('p95_seconds'))}")
+        report(f"[消耗] prompt {tokens.get('prompt_tokens', 0)} + "
+               f"completion {tokens.get('completion_tokens', 0)} = "
+               f"{tokens.get('total_tokens', 0)} tokens")
+        report(f"结果目录：{directory}")
         return summary

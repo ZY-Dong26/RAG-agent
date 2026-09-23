@@ -5,8 +5,10 @@ scripts/
 ├── parse_documents.py   # 只解析 PDF（MinerU 云端），不建向量库
 ├── build_index.py       # 增量建库：解析 + 切块 + 向量化 + 发布索引
 ├── chat.py              # 用当前索引做命令行问答
-├── evaluate.py          # 批量回答评测集并统计检索指标（无自动评分）
-└── debug_chat.py         # 交互问答，导出检索/提示词诊断报告
+├── evaluate.py          # 批量回答评测集并统计检索指标（不调用裁判模型）
+├── export_results.py    # 从已有 items 纯本地重新导出全部汇总产物
+├── judge.py             # 用独立裁判模型给已有评测批次自动判分
+└── debug_chat.py        # 交互问答，导出检索/提示词诊断报告
 ```
 
 所有命令在项目根目录的 PowerShell 中执行，用项目自己的解释器，无需激活虚拟环境。首次使用顺序：**建库 → 问答 → 按需调试或评测**（单独解析是可选步骤，建库已包含）。各脚本都支持 `--help` 查看完整参数。
@@ -74,9 +76,33 @@ scripts/
 .\.venv\Scripts\python.exe scripts/evaluate.py --output "data/outputs/evaluation/testdata-baseline-20260923"
 ```
 
-结果在 `data/outputs/evaluation/<批次>/`：`report.md`（逐题检索证据 + 回答）、`results.csv`（人工评分表）、`summary.json`（指标汇总）。Ctrl+C 中断后可续跑，未保存的那次请求可能已计费。
+结果在 `data/outputs/evaluation/<批次>/`：`items/`（逐题权威记录）、`report.md`、`results.csv`、`summary.json` 和 `judge_summary.md`。CSV 末尾四列预留给模型判分；evaluate.py 本身不调用裁判模型。Ctrl+C 中断后可续跑，未保存的那次请求可能已计费。
 
-## 5. 调试问答：debug_chat.py
+## 5. 重新导出：export_results.py
+
+```powershell
+# 只读取已有 items，不加载模型、不产生 API 费用
+.\.venv\Scripts\python.exe scripts/export_results.py "data/outputs/evaluation/<批次>"
+```
+
+该命令会重新生成 `results.jsonl`、`results.csv`、`report.md`、`summary.json` 和 `judge_summary.md`。
+
+## 6. 自动判分：judge.py
+
+先在 `.env` 中独立配置 `JUDGE_LLM_BASE_URL`、`JUDGE_LLM_API_KEY` 和 `JUDGE_LLM_MODEL`，再运行：
+
+```powershell
+# 判完所有尚未判分的 item；中断后原命令重跑会跳过已判题
+.\.venv\Scripts\python.exe scripts/judge.py "data/outputs/evaluation/<批次>"
+
+# 少量试跑；强制重判会再次产生费用
+.\.venv\Scripts\python.exe scripts/judge.py "data/outputs/evaluation/<批次>" --limit 3
+.\.venv\Scripts\python.exe scripts/judge.py "data/outputs/evaluation/<批次>" --force
+```
+
+裁判温度和最大输出长度在 `src/devtools/evaluation/judge_config.py` 中使用代码默认值；脚本只读取已有 item，并把 0–3 分的正确性、完整性、相关性及理由原子写回 `judge` 字段。随后复用同一 exporter 更新 CSV、逐题报告和判分汇总表。
+
+## 7. 调试问答：debug_chat.py
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/debug_chat.py            # 问答并打印报告路径

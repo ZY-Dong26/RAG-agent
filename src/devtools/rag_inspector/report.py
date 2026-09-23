@@ -1,5 +1,15 @@
-"""把一轮 RAG 调试轨迹写成 JSON 和可直接打开的静态 HTML。"""
+"""
+report.py —— 把一轮 RAG 调试轨迹渲染成可直接打开的静态 HTML 诊断报告
 
+职责：
+    1. 接收 TraceRecorder 收集的一轮问答轨迹（问题、命中块、发送的 prompt、回答、耗时）。
+    2. 把命中块按"已发送/未发送"着色，直观展示字符预算截掉了哪些 chunk。
+    3. 补充命中块相邻 segment、最终 prompt、模型配置，帮助定位"为什么没答好"。
+
+设计原因：
+    - 纯字符串拼接 HTML，不依赖模板引擎；所有用户文本经过 html.escape，防止问题或回答里的 HTML 标签注入。
+    - 输出到 data/outputs/debug/<时间戳>_<问题摘要>_<随机>/，JSON 和 HTML 各一份，方便对比多轮调试。
+"""
 from __future__ import annotations
 
 import html
@@ -13,15 +23,18 @@ from .recorder import TraceRecorder
 
 
 def _escape(value) -> str:
+    """所有用户文本统一转义，防止问题或 chunk 里的 HTML 标签注入报告页面。"""
     return html.escape("" if value is None else str(value))
 
 
 def _request_messages(trace: dict) -> list[dict]:
+    """从轨迹中取出实际发给模型的 messages；缺失时返回空列表。"""
     messages = trace.get("request", {}).get("messages", [])
     return messages if isinstance(messages, list) else []
 
 
 def _sent_text(trace: dict) -> str:
+    """拼接 user 消息全文，用于判断某个 chunk 是否因字符预算被截掉。"""
     return "\n".join(
         str(message.get("content", ""))
         for message in _request_messages(trace)
@@ -158,7 +171,12 @@ document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener(
 
 
 def write_trace_report(recorder: TraceRecorder, output_root: Path) -> tuple[Path, Path]:
-    """创建独立运行目录，返回 (JSON 路径, HTML 路径)。"""
+    """
+    把一轮调试轨迹写入独立运行目录，返回 (JSON 路径, HTML 路径)。
+
+    目录名格式：<时间戳>_<问题摘要>_<随机后缀>，避免多轮调试互相覆盖。
+    JSON 保留完整原始轨迹，HTML 是给人看的可视化版本。
+    """
     trace = recorder.as_dict()
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     directory = Path(output_root) / f"{stamp}_{_safe_slug(recorder.question)}_{uuid.uuid4().hex[:6]}"

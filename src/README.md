@@ -11,7 +11,7 @@ src/
 │   ├── qa/                   # 检索、提示词构造与回答生成
 │   └── common/               # JSON 保存、文件锁与进度提示
 └── devtools/                 # 开发辅助实现
-    ├── evaluation/           # 批量评测、检索指标、结果导出与恢复
+    ├── evaluation/           # 批量评测、检索指标、结果导出、模型判分与汇总
     └── rag_inspector/        # 问答过程记录与 JSON、HTML 诊断报告
 ```
 

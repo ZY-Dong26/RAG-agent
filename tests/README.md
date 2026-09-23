@@ -9,6 +9,8 @@ tests/
 ├── test_qa_service.py        # 检索与生成的衔接，以及无资料时的处理
 ├── test_progress.py         # 进度提示、等待线程退出与错误信息保护
 ├── test_evaluation.py       # 评测指标、答案隔离、断点恢复与导出
+├── test_judge_config.py     # 裁判配置隔离、环境变量优先级与参数校验
+├── test_judging.py          # 独立导出、裁判 JSON 校验、逐题写回与续跑
 └── test_rag_inspector.py     # 调试记录、邻近片段查询与报告生成
 ```
 

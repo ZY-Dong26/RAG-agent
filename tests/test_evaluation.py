@@ -42,6 +42,7 @@ class EvaluationTests(unittest.TestCase):
             self.assertNotIn("秘密", str(data[0]["messages"]))
             self.assertTrue((root / "results.csv").read_bytes().startswith(b"\xef\xbb\xbf"))
             self.assertTrue((root / "report.md").exists())
+            self.assertTrue((root / "judge_summary.md").exists())
             with self.assertRaises(ValueError):
                 run_evaluation(rows, {"文档1": "a.pdf"}, retriever, generator, root, {"v": 2})
 

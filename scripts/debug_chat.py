@@ -1,4 +1,16 @@
-"""开发期 RAG 问答入口：不改核心流程，额外生成每轮 JSON 与 HTML 诊断报告。"""
+"""
+debug_chat.py —— 带本地 HTML 诊断报告的 RAG 调试问答入口
+
+职责：
+    1. 与 chat.py 相同的问答流程，但每轮额外生成 JSON 轨迹和 HTML 诊断报告。
+    2. 用 RecordingClient 代理 LLM 客户端，记录实际发送的 messages 和模型回答。
+    3. 补充命中块相邻 segment，帮助定位检索或生成哪一步出了问题。
+
+设计原因：
+    - 不改 Generator/Retriever 核心代码；只在调用期间替换 client，用完恢复原值。
+    - 报告输出到 data/outputs/debug/<时间戳>_<问题摘要>_<随机>/，多轮调试不互相覆盖。
+    - --open 参数可每轮自动用浏览器打开最新报告，省去手动找文件。
+"""
 
 import argparse
 import sys
@@ -25,6 +37,17 @@ EXIT_WORDS = {"exit", "quit", "q", "退出", "再见"}
 
 
 def _ask(question, retriever, generator, open_report=False):
+    """
+    执行一轮调试问答：检索 → 记录 → 代理客户端生成 → 写诊断报告。
+
+    输入：问题字符串、已加载的检索器和生成器、是否自动打开浏览器。
+    输出：(回答文本, 命中块列表)。
+
+    流程：
+        1. 正常检索，记录命中块和耗时。
+        2. 临时把 generator.client 换成 RecordingClient，调 generate。
+        3. finally 中恢复原 client，加载相邻 chunk，写 JSON + HTML 报告。
+    """
     recorder = TraceRecorder(question)
     started = perf_counter()
     with stage("问题向量化与资料检索"):

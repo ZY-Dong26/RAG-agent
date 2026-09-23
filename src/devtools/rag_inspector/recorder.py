@@ -1,5 +1,16 @@
-"""透明记录实际 LLM 请求，并补充检索结果与相邻文本块。"""
+"""
+recorder.py —— 透明记录一轮 RAG 调试问答的完整轨迹
 
+职责：
+    1. 保存问题、命中 chunk、实际发送的 messages、模型回答和各阶段耗时。
+    2. 用 RecordingClient 代理 OpenAI 客户端，只拦截 chat.completions.create，记录请求参数和回答。
+    3. 额外读取活动索引的 chunk 元数据，为每个命中块找同一文档中相邻 segment。
+
+设计原因：
+    - 调试时需要知道"到底发给模型什么了"，而不是猜测。RecordingClient 在不改动 Generator 的前提下截获请求。
+    - 不记录 API Key 或客户端连接信息；只保存可序列化的请求参数和回答文本。
+    - 相邻 chunk 单独加载，不污染检索器本身；radius=1 表示命中块前后各取一个 segment。
+"""
 from __future__ import annotations
 
 import json
@@ -11,7 +22,15 @@ from typing import Any
 
 
 def _jsonable(value: Any) -> Any:
-    """把请求参数转换为可写入 JSON 的普通对象，不读取客户端内部配置。"""
+    """
+    把请求参数递归转成可写入 JSON 的普通对象。
+
+    输入：Generator 传给 SDK 的任意 kwargs。
+    输出：只含 str/int/float/bool/dict/list 的结构；其他类型一律转字符串。
+
+    设计原因：SDK 内部对象（如 httpx.Client）不可序列化，这里只取字面量字段，
+    避免把客户端连接信息或 API Key 写进调试报告。
+    """
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     if isinstance(value, dict):
@@ -23,7 +42,12 @@ def _jsonable(value: Any) -> Any:
 
 @dataclass
 class TraceRecorder:
-    """保存一轮调试问答的数据；不包含 API Key 或客户端连接信息。"""
+    """
+    一轮调试问答的完整数据记录器。
+
+    字段按问答流程填充：record_retrieval → record_request → record_answer/record_error。
+    不包含 API Key 或客户端连接信息。
+    """
 
     question: str
     hits: list[dict] = field(default_factory=list)
@@ -65,6 +89,7 @@ class TraceRecorder:
 
 
 class _RecordingCompletions:
+    """代理 chat.completions.create：先记录请求 kwargs，再转发给真实客户端。"""
     def __init__(self, delegate, recorder: TraceRecorder):
         self._delegate = delegate
         self._recorder = recorder
@@ -84,6 +109,7 @@ class _RecordingCompletions:
 
 
 class _RecordingChat:
+    """代理 client.chat，只替换 completions 属性；其他属性透传给真实客户端。"""
     def __init__(self, delegate, recorder: TraceRecorder):
         self._delegate = delegate
         self.completions = _RecordingCompletions(delegate.completions, recorder)
@@ -93,7 +119,12 @@ class _RecordingChat:
 
 
 class RecordingClient:
-    """OpenAI 客户端的透明代理，只拦截 chat.completions.create。"""
+    """
+    OpenAI 客户端的透明代理，只拦截 chat.completions.create。
+
+    用法：generator.client = RecordingClient(原始客户端, recorder)，用完后恢复原值。
+    其他属性（如 base_url、api_key）通过 __getattr__ 透传，不暴露给记录器。
+    """
 
     def __init__(self, delegate, recorder: TraceRecorder):
         self._delegate = delegate
@@ -115,7 +146,19 @@ def _active_chunks_path(project_root: Path) -> Path | None:
 
 
 def load_neighbor_chunks(project_root: Path, hits: list[dict], radius: int = 1) -> dict[str, list[dict]]:
-    """读取活动索引元数据，为每个命中块找同一文档中相邻的 segment。"""
+    """
+    读取活动索引元数据，为每个命中块找同一文档中相邻的 segment。
+
+    输入：
+        project_root: 项目根目录。
+        hits: 检索返回的命中块列表。
+        radius: 向前后各取几个 segment，默认 1（命中块前后各一个）。
+
+    输出：{命中排名: [相邻chunk列表]}，用于调试"命中块上下文是否足够"。
+
+    设计原因：FAISS 只返回相似度最高的 chunk，但答案可能需要它前后的上下文。
+    这里从 chunks_meta.json 按 document_id + segment_index 定位相邻块，不影响检索本身。
+    """
     chunks_path = _active_chunks_path(Path(project_root))
     if chunks_path is None or radius < 1:
         return {}

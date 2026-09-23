@@ -1,6 +1,6 @@
 # RAG-agent
 
-用于学习 RAG 的 PDF 知识库项目，采用轻量工程化结构，提供解析、建库、命令行问答、批量评测和问答调试五个入口。
+用于学习 RAG 的 PDF 知识库项目，轻量工程化，覆盖从原始 PDF 到评测判分的完整链路。
 
 ```text
 建库：PDF → MinerU 云端解析 → 本地切块 → Qwen3 Embedding → FAISS 索引
@@ -10,11 +10,23 @@
 MinerU 在解析时接收完整 PDF；日常问答复用本地索引，只向回答模型发送问题和检索文本。
 当前是文本 RAG，保存解析图片不等于支持图片理解。
 
+## 功能总览
+
+| 能力 | 说明 |
+|---|---|
+| **云端解析** | MinerU 解析 PDF，保留页码和来源；按内容哈希缓存，不重复上传 |
+| **增量建库** | 未变化文档复用向量，只给新文档算 Embedding；候选索引验证后才切换 |
+| **命令行问答** | 本地检索 + 云端 LLM 生成，回答带引用来源编号 |
+| **调试诊断** | 每轮问答可导出 HTML 报告，展示实际发送的 prompt、命中块是否被截断、相邻 chunk |
+| **批量评测** | 跑 84 道题评测集，统计 hit@k、recall@k、MRR、延迟和 token 消耗 |
+| **模型判分** | 用独立裁判模型按正确性/完整性/相关性三维度打分，支持断点续跑 |
+| **离线导出** | 从已有批次纯本地重建 CSV、报告和汇总表，不调模型、不花 token |
+
 ## 目录与文档导航
 
 ```text
 RAG-agent/
-├── scripts/           # 五个运行入口，完整命令及参数说明
+├── scripts/           # 七个运行入口
 ├── src/               # 核心 RAG 与评测、调试实现
 ├── data/              # 原始资料、解析缓存、向量库、评测输入和输出
 ├── tests/             # 离线自动化测试
@@ -22,18 +34,16 @@ RAG-agent/
 ├── frontend/          # 未来前端预留，目前没有可运行界面
 ├── .env.example       # 环境配置模板及参数注释
 ├── requirements.txt   # Python 依赖
-└── README.md          # 项目总览与首次运行说明
+└── README.md          # 本文件
 ```
 
-各目录的细节集中在对应文档，根目录只保留首次运行所需内容：
+各目录细节集中在对应文档，根目录只保留首次运行所需内容：
 
 | 想了解什么 | 去哪里查看 |
 |---|---|
 | 每个入口做什么、所有命令参数、PyCharm 怎么运行 | [scripts/README.md](scripts/README.md) |
 | 各源码模块的职责与学习顺序 | [src/README.md](src/README.md) |
-| 解析文件、索引、报告分别放在哪里，哪些数据需要保留 | [data/README.md](data/README.md) |
-| 评测指标、导出文件和断点恢复 | [src/devtools/README.md](src/devtools/README.md) |
-| 问答调试记录与报告 | [rag_inspector/README.md](src/devtools/rag_inspector/README.md) |
+| 数据目录结构、缓存和输出的保留规则 | [data/README.md](data/README.md) |
 | 离线测试范围与运行命令 | [tests/README.md](tests/README.md) |
 | 后续前端的设计边界 | [frontend/README.md](frontend/README.md) |
 
@@ -64,6 +74,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 
 - `MINERU_API_KEY`：云端 PDF 解析密钥。
 - `LLM_API_KEY`：回答模型密钥，同时核对 `LLM_BASE_URL` 和 `LLM_MODEL`。
+- `JUDGE_LLM_API_KEY`：可选的独立裁判模型密钥；同时配置 `JUDGE_LLM_BASE_URL` 和 `JUDGE_LLM_MODEL`。
 - `EMBEDDING_MODEL`：本地向量模型目录，默认 `model/Qwen3-Embedding-0.6B`。
 
 其他参数的含义见 [.env.example](.env.example)，不在这里重复配置清单。
@@ -90,15 +101,14 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 建库结束后查看 `data/processed/build_report.json`，确认哪些文档入库、失败或沿用了旧版。
 聊天输入 `exit` 退出；更新知识库后需重启聊天入口。
 
-单文件解析、重新上传、严格建库、强制重算、批量评测和调试报告等操作，统一查阅
-[scripts/README.md](scripts/README.md)。其中每个参数都有可复制的完整命令和功能说明，PyCharm 的运行配置也在该文档中。
+批量评测、模型判分、调试报告等操作，统一查阅 [scripts/README.md](scripts/README.md)。
 
 ## 需要了解的运行规则
 
 - **解析缓存**：按 PDF 内容、解析参数与适配版本等识别缓存。未变化文件复用结果，修改切块参数无需重新上传；普通重跑优先恢复原任务，不盲目创建新任务。
 - **增量建库**：复用未变化文档的向量，再组装完整候选索引。默认允许部分解析失败；新文件失败时报告未入库，已有文档更新失败时可保留旧版。向量计算或写入异常仍会中止构建。
 - **索引保护**：候选索引验证后才切换活动版本；历史索引和解析缓存不会自动删除。正式索引在 `data/vector_db/`，数据保留规则见 [数据目录说明](data/README.md)。
-- **评测与调试**：结果写入 `data/outputs/`。评测记录检索指标、耗时和接口用量，供人工审阅，目前不接评分模型；指标含义见 [开发工具说明](src/devtools/README.md)。
+- **评测与判分**：结果写入 `data/outputs/`。跑评测、纯本地导出、裁判判分三个入口相互独立；已有批次可再用独立裁判模型按正确性、完整性和相关性判分，详见 [运行入口说明](scripts/README.md) 第 4–6 节。
 - **当前边界**：聊天各轮独立检索，没有多轮历史；检索指标不等于答案正确率。离线测试验证程序行为，真实解析质量与回答效果仍需人工验收。
 
 遇到解析或建库失败，先看终端阶段提示及 `data/processed/` 下的报告。
