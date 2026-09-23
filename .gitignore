@@ -59,8 +59,13 @@ coverage.xml
 Thumbs.db
 Desktop.ini
 
-# 评测结果含原始资料、答案与提示词，仅保留本地
-/data/outputs/
+# 评测集定义与评测/调试输出仅保留本地；保留各层 .gitkeep 以跟踪目录结构
+/data/evaluation/*
+!/data/evaluation/.gitkeep
+/data/outputs/*
+!/data/outputs/*/
+/data/outputs/*/*
+!/data/outputs/*/.gitkeep
 
 # 本地项目开发约定，不纳入 Git
 /AGENTS.md
