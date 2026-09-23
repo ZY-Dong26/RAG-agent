@@ -53,9 +53,13 @@ def main():
         report("[校验通过] 题目字段、题号及文档映射完整")
         return
     from rag_agent.qa.generator import Generator
+    from rag_agent.qa.evidence_policy import EvidencePolicy
+    from rag_agent.qa.reranker import Reranker
     from rag_agent.qa.retriever import Retriever
-    with stage("加载当前索引与 Embedding；整个批次只加载一次"):
+    with stage("加载当前混合索引与本地模型；整个批次只加载一次"):
         retriever = Retriever()
+        reranker = Reranker() if config.RERANK_ENABLED else None
+        evidence_policy = EvidencePolicy(config.RERANK_REJECT_THRESHOLD)
         generator = Generator()
     k = args.top_k or config.TOP_K
     # 快照不记录 API Key 或带鉴权的 URL；源代码哈希包含提示词和评测实现。
@@ -63,16 +67,29 @@ def main():
     model_dir = Path(config.EMBEDDING_MODEL)
     model_files = [(str(p.relative_to(model_dir)), p.stat().st_size, p.stat().st_mtime_ns)
                    for p in sorted(model_dir.rglob("*")) if p.is_file()]
+    reranker_dir = Path(config.RERANKER_MODEL)
+    reranker_files = [(str(p.relative_to(reranker_dir)), p.stat().st_size, p.stat().st_mtime_ns)
+                      for p in sorted(reranker_dir.rglob("*")) if p.is_file()]
+    bm25_manifest = retriever.store.index_path.parent / "bm25" / "manifest.json"
     signature = {"schema": 1, "dataset_sha256": digest(args.dataset), "mapping": mapping,
                  "index_sha256": digest(retriever.store.index_path), "metadata_sha256": digest(retriever.store.meta_path),
                  "index_version": retriever.store.index_path.parent.name,
                  "model": generator.model, "temperature": generator.temperature, "max_tokens": generator.max_tokens,
                  "endpoint_fingerprint": hashlib.sha256(config.LLM_BASE_URL.encode()).hexdigest(),
                  "top_k": k, "max_context_chars": config.MAX_CONTEXT_CHARS,
+                 "dense_top_k": config.DENSE_TOP_K, "bm25_top_k": config.BM25_TOP_K,
+                 "fusion_top_k": config.FUSION_TOP_K, "rrf_k": config.RRF_K,
+                 "reranker_enabled": config.RERANK_ENABLED,
+                 "reranker_model": config.RERANKER_MODEL if config.RERANK_ENABLED else None,
+                 "reranker_files_fingerprint": hashlib.sha256(
+                     json.dumps(reranker_files).encode()).hexdigest() if config.RERANK_ENABLED else None,
+                 "rerank_reject_threshold": config.RERANK_REJECT_THRESHOLD,
+                 "bm25_manifest_sha256": digest(bm25_manifest),
                  "embedding_model": str(model_dir), "embedding_max_length": config.EMBEDDING_MAX_LENGTH,
                  "embedding_files_fingerprint": hashlib.sha256(json.dumps(model_files).encode()).hexdigest(), "code": code}
     directory = args.output or ROOT / "data/outputs/evaluation" / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-    run_evaluation(rows, mapping, retriever, generator, directory, signature, k, args.limit, args.retry_failed)
+    run_evaluation(rows, mapping, retriever, generator, directory, signature, k, args.limit,
+                   args.retry_failed, reranker=reranker, evidence_policy=evidence_policy)
 
 
 if __name__ == "__main__":

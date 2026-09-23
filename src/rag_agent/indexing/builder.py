@@ -5,7 +5,7 @@ builder.py —— 按文档增量更新知识库的业务层
     1. 比较 data/raw 中的 PDF 与当前活动索引，判断复用、新增、更新和缺失。
     2. 单份解析失败时保留其他成功结果；解析更新失败时尝试使用该文档的旧版向量。
     3. 只给新增或变化文档计算 Embedding，未变化文档复用 document_artifacts。
-    4. 把所有有效文档重新组装成完整候选 FAISS 索引，验证后原子发布。
+    4. 把所有有效文档重新组装成同代 FAISS 与 BM25 索引，验证后原子发布。
 
 这里的“增量”指昂贵的解析、切块和向量计算按文档执行；活动 FAISS 不做原地追加。
 完整候选索引很容易验证和回滚，也能正确处理文档替换、删除和更新失败。
@@ -29,7 +29,7 @@ from rag_agent.common.files import atomic_json, exclusive_lock, read_json
 
 
 SPLITTER_VERSION = 3  # v3 表示切块元数据加入稳定的文档 ID 和内容型 chunk ID。
-MANIFEST_VERSION = 2  # v2 表示 build_manifest 开始保存逐文档产物和不可用文档清单。
+MANIFEST_VERSION = 3  # v3 表示每代索引同时包含已校验的 FAISS 与 BM25。
 
 
 def input_paths(paths=None):
@@ -116,6 +116,25 @@ def _active_manifest():
         return {}
     path = store.index_path.parent / "build_manifest.json"
     return read_json(path) if path.is_file() else {}
+
+
+def _active_hybrid_index_valid(expected_chunks):
+    """
+    验证当前代 FAISS、metadata 与 BM25 仍能共同回读，且 chunk_id 顺序等于本次候选。
+
+    构建签名相同并不代表磁盘文件一定完好；若 BM25 缺失或损坏，应在本次仅用已有
+    chunks/向量重新发布，而不是因为清单签名相同就继续保留不可用的活动版本。
+    """
+    from rag_agent.indexing import faiss_store
+    from rag_agent.indexing.bm25_store import BM25Store
+    try:
+        store = faiss_store.VectorStore().load()
+        BM25Store.load(store.index_path.parent / "bm25", store.chunks)
+    except (FileNotFoundError, ValueError, RuntimeError, OSError):
+        return False
+    active_ids = [chunk.get("metadata", {}).get("chunk_id") for chunk in store.chunks]
+    expected_ids = [chunk.get("metadata", {}).get("chunk_id") for chunk in expected_chunks]
+    return active_ids == expected_ids
 
 
 def _stable_chunks(documents, document_id, source_sha256, source_path):
@@ -334,22 +353,34 @@ def build_index(force=False, strict=False, prune_missing=False):
         publication_state = [{key: row.get(key) for key in
                               ("document_id", "artifact_key", "status", "observed_source_sha256")}
                              for row in records]
-        index_signature = fingerprint({"records": publication_state, "unavailable": unavailable})
-        # 签名包含可用产物与失败清单：即使向量相同，文档状态变化也可能发布新版本。
-        already_current = old_manifest.get("signature") == index_signature
+        # 延迟导入 bm25s 相关模块，避免只运行解析或查看 --help 时加载稀疏检索依赖。
+        from rag_agent.indexing.bm25_store import BM25Store
+        bm25_signature = BM25Store.configuration_signature()
+        index_signature = fingerprint({
+            "records": publication_state,
+            "unavailable": unavailable,
+            "bm25_configuration": bm25_signature,
+        })
+        # BM25 配置只参与整库发布签名，不进入逐文档 pipeline_signature。因此 tokenizer 或
+        # bm25s 参数变化时会用已有 chunks 重建本地索引，不会让解析缓存和文档向量失效。
+        already_current = (old_manifest.get("signature") == index_signature
+                           and _active_hybrid_index_valid(all_chunks))
 
         notify(f"[索引] 汇总 {len(records)} 份有效文档，{len(all_chunks)} 个向量")
         if not already_current:
-            notify("[发布] 构建候选索引，回读验证通过后切换版本")
+            notify("[发布] 构建 FAISS 与中文 BM25 候选索引，回读验证后切换版本")
             from rag_agent.indexing import faiss_store
             candidate = faiss_store.VectorStore()
             # VectorStore.add 同时支持普通列表；转回列表避免 NumPy 数组参与布尔判断产生歧义。
             candidate.add(all_chunks, vectors.tolist())
+            with stage(f"构建中文 BM25：{len(all_chunks)} 个文本块"):
+                bm25_candidate = BM25Store().build(all_chunks)
             candidate.save({
                 "manifest_version": MANIFEST_VERSION,
                 "signature": index_signature,
                 "pipeline_signature": pipeline_id,
                 "embedding_signature": embedding_id,
+                "bm25_configuration_signature": bm25_signature,
                 "documents": [row["source"] for row in records],
                 "document_records": records,
                 "unavailable_documents": unavailable,
@@ -357,7 +388,7 @@ def build_index(force=False, strict=False, prune_missing=False):
                 "embedding_model": str(Path(config.EMBEDDING_MODEL)),
                 "partial": bool(unavailable),
                 "created_at": time.time(),
-            })
+            }, bm25_store=bm25_candidate)
         else:
             print("文档状态、向量产物与当前索引一致，跳过候选索引发布")
 

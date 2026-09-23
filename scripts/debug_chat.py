@@ -31,14 +31,15 @@ if __name__ == "__main__":
 with stage("加载运行依赖"):
     from rag_agent.qa.generator import Generator
     from rag_agent.qa.retriever import Retriever
+    from rag_agent.qa.service import RAGService
 
 
 EXIT_WORDS = {"exit", "quit", "q", "退出", "再见"}
 
 
-def _ask(question, retriever, generator, open_report=False):
+def _ask(question, service, generator, open_report=False):
     """
-    执行一轮调试问答：检索 → 记录 → 代理客户端生成 → 写诊断报告。
+    执行一轮调试问答：完整服务链路 → 记录 → 写诊断报告。
 
     输入：问题字符串、已加载的检索器和生成器、是否自动打开浏览器。
     输出：(回答文本, 命中块列表)。
@@ -50,31 +51,27 @@ def _ask(question, retriever, generator, open_report=False):
     """
     recorder = TraceRecorder(question)
     started = perf_counter()
-    with stage("问题向量化与资料检索"):
-        hits = retriever.retrieve(question)
-    recorder.record_retrieval(hits, perf_counter() - started)
-    report(f"[检索] 找到 {len(hits)} 条候选资料")
-
-    answer = None
     original_client = generator.client
     try:
-        if hits:
-            generator.client = RecordingClient(original_client, recorder)
-            with stage("等待云端 LLM 生成回答"):
-                answer = generator.generate(question, hits)
+        generator.client = RecordingClient(original_client, recorder)
+        result = service.ask(question)
+        recorder.record_retrieval(result.hits, perf_counter() - started)
+        if recorder.answer is None:
+            recorder.answer = result.answer
     except Exception as error:
         if recorder.error is None:
             recorder.record_error(error)
         raise
     finally:
         generator.client = original_client
+        hits = result.hits if "result" in locals() else []
         recorder.neighbors = load_neighbor_chunks(PROJECT_ROOT, hits, radius=1)
         _, html_path = write_trace_report(recorder, PROJECT_ROOT / "data/outputs/debug")
         print(f"\n诊断报告: {html_path.resolve()}")
         if open_report:
             webbrowser.open(html_path.resolve().as_uri())
 
-    return answer, hits
+    return result
 
 
 def main():
@@ -82,12 +79,13 @@ def main():
     parser.add_argument("--open", action="store_true", help="每轮问答后自动用默认浏览器打开报告")
     args = parser.parse_args()
 
-    print("正在加载 embedding 模型、FAISS 索引和 LLM 客户端……")
+    print("正在加载 Embedding、FAISS、BM25 索引和 LLM 客户端……")
     try:
         with stage("加载 FAISS 索引和本地 Embedding 模型"):
             retriever = Retriever()
         with stage("检查 LLM 配置并创建客户端"):
             generator = Generator()
+        service = RAGService(retriever=retriever, generator=generator)
     except (RuntimeError, ValueError, OSError) as error:
         print(f"[启动失败] {error}")
         return
@@ -105,16 +103,18 @@ def main():
             print("再见")
             break
         try:
-            answer, hits = _ask(question, retriever, generator, args.open)
-            if not hits:
-                print("向量库中没有找到相关内容。\n")
+            result = _ask(question, service, generator, args.open)
+            if not result.answerable:
+                print(f"拒答: {result.answer}（{result.evidence_status}）\n")
                 continue
-            print(f"\n回答: {answer}\n\n引用来源:")
-            for hit in hits:
+            print(f"\n回答: {result.answer}\n\n引用来源:")
+            for hit in result.hits:
                 metadata = hit["metadata"]
+                score = metadata.get("rerank_score")
                 print(
                     f"  [{metadata.get('rank', '?')}] {metadata.get('source', '?')} "
-                    f"第{metadata.get('page', '?')}页 (相似度{metadata['score']:.4f})"
+                    f"第{metadata.get('page', '?')}页"
+                    + (f" (重排分数{score:.4f})" if score is not None else " (按 RRF 排名)")
                 )
             print()
         except Exception as error:

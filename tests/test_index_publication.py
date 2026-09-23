@@ -15,6 +15,7 @@ import faiss
 from rag_agent import config
 from rag_agent.indexing import chunker, faiss_store
 from rag_agent.indexing import builder
+from rag_agent.indexing.bm25_store import BM25Store
 from rag_agent.indexing.artifact_store import load_artifact, save_artifact
 from rag_agent.common.files import atomic_json, read_json
 
@@ -52,6 +53,29 @@ class PublicationTests(unittest.TestCase):
             new.save({"signature": "new"})
             self.assertEqual(faiss_store.VectorStore(root).load().chunks, self.chunks("new"))
             self.assertTrue((root / "generations" / pointer["generation"] / "index.faiss").exists())
+
+    def test_bm25_failure_and_id_mismatch_do_not_switch_generation(self):
+        """BM25 写入失败或与 FAISS ID 不一致时，旧活动版本保持不变。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            old = faiss_store.VectorStore(root)
+            old.add(self.chunks(), [[1.0, 0.0]])
+            old.save({"signature": "old"})
+            pointer = read_json(root / "current.json")
+
+            candidate = faiss_store.VectorStore(root)
+            candidate.add(self.chunks("new"), [[0.0, 1.0]])
+            mismatched = BM25Store().build(self.chunks("different"))
+            with self.assertRaisesRegex(ValueError, "chunk 数量或 ID"):
+                candidate.save({"signature": "new"}, bm25_store=mismatched)
+            self.assertEqual(read_json(root / "current.json"), pointer)
+
+            valid = BM25Store().build(self.chunks("new"))
+            with patch.object(BM25Store, "save", side_effect=OSError("simulated BM25 error")):
+                with self.assertRaises(OSError):
+                    candidate.save({"signature": "new"}, bm25_store=valid)
+            self.assertEqual(read_json(root / "current.json"), pointer)
+            self.assertEqual(faiss_store.VectorStore(root).load().chunks, self.chunks())
 
     def test_legacy_index_kept_and_invalid_vectors_rejected(self):
         """旧格式索引仍可读取和保留，同时拒绝数量不匹配以及 NaN 向量。"""

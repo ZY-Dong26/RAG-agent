@@ -57,6 +57,8 @@ def build_judge_messages(item):
         "relevance 衡量是否直接回答问题且没有明显无关内容。"
         "0 表示完全不满足，1 表示少量满足，2 表示大部分满足，3 表示充分满足。"
         "只输出一个 JSON 对象，不要 Markdown、代码围栏或额外文字。"
+        "如果 RAG 回答是空回答或表示未找到相关内容，直接给 correctness=0、completeness=0，reason 不超过一句话。"
+        "reason 字段控制在 50 字以内，只写结论，不要展开推理过程。"
     )
     user = ("请返回格式："
             '{"correctness":0,"completeness":0,"relevance":0,"reason":"简明、具体、可复核的理由"}'
@@ -169,6 +171,7 @@ def judge_directory(directory, client, model, base_url, temperature, max_tokens,
                             messages=build_judge_messages(item),
                             temperature=temperature,
                             max_tokens=max_tokens,
+                            extra_body={"thinking": {"type": "disabled"}},
                         )
                     content = response.choices[0].message.content
                     scores, reason = parse_judge_json(content)

@@ -6,7 +6,10 @@
 tests/
 ├── test_mineru.py            # 模拟云端任务、缓存恢复、鉴权与解析验收
 ├── test_index_publication.py # 向量产物复用、部分成功与索引发布保护
-├── test_qa_service.py        # 检索与生成的衔接，以及无资料时的处理
+├── test_bm25_store.py       # 中文分词、BM25 持久化与损坏检测
+├── test_hybrid_retrieval.py # RRF 去重、单路候选与假 BGE 重排
+├── test_qa_service.py       # 证据门控、拒答与生成调用隔离
+├── test_retrieval_config.py # 混合检索默认值及模型路径解析
 ├── test_progress.py         # 进度提示、等待线程退出与错误信息保护
 ├── test_evaluation.py       # 评测指标、答案隔离、断点恢复与导出
 ├── test_judge_config.py     # 裁判配置隔离、环境变量优先级与参数校验

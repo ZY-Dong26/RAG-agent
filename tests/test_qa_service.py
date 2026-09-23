@@ -1,55 +1,85 @@
-"""问答应用服务测试：验证未来前端与命令行共用的稳定入口，不调用真实模型。"""
+"""服务层离线测试：验证证据门控严格位于重排和生成之间。"""
 import sys
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from rag_agent.qa.evidence_policy import EvidencePolicy, REFUSAL_ANSWER
 from rag_agent.qa.service import RAGService
 
 
 class FakeRetriever:
-    """返回测试预设命中，代替本地 Embedding 和 FAISS。"""
     def __init__(self, hits):
-        """保存预设检索记录，后续直接返回。"""
         self.hits = hits
 
-    def retrieve(self, question):
-        """返回预设命中，隔离真实向量模型与检索索引。"""
+    def retrieve(self, _question):
         return self.hits
 
 
+class FakeReranker:
+    def __init__(self, score=.8):
+        self.score = score
+
+    def rerank(self, _question, hits):
+        return [{"text": hit["text"], "metadata": {
+            **hit["metadata"], "rerank_score": self.score, "rank": rank,
+        }} for rank, hit in enumerate(hits[:5], 1)]
+
+
 class FakeGenerator:
-    """记录生成调用，代替云端 LLM。"""
     def __init__(self):
-        """初始化调用记录，供测试断言生成器是否被调用。"""
         self.calls = []
 
     def generate(self, question, hits):
-        """记录问题与命中资料，返回固定答案，隔离真实 LLM 调用。"""
         self.calls.append((question, hits))
         return "测试回答"
 
 
-class RAGServiceTests(unittest.TestCase):
-    """验证统一问答入口是否正确连接检索与生成，并保留引用信息。"""
-    def test_answer_returns_text_and_sources(self):
-        """有检索结果时返回生成答案，并把同一份引用记录交给调用界面。"""
-        hits = [{"text": "证据", "metadata": {"source": "a.pdf", "page": 1}}]
-        generator = FakeGenerator()
-        service = RAGService(retriever=FakeRetriever(hits), generator=generator)
-        result = service.ask("问题")
-        self.assertEqual(result.answer, "测试回答")
-        self.assertEqual(result.hits, hits)
-        self.assertEqual(generator.calls, [("问题", hits)])
+def evidence():
+    return [{"text": "证据", "metadata": {"chunk_id": "c1", "source": "a.pdf", "page": 1}}]
 
-    def test_empty_retrieval_does_not_call_llm(self):
-        """没有资料时返回空答案，避免前端请求触发无依据的 LLM 调用。"""
+
+class RAGServiceTests(unittest.TestCase):
+    def test_threshold_none_allows_answer_and_marks_uncalibrated(self):
+        """阈值为 None 时不硬拒答，但结果明确标记尚未校准。"""
         generator = FakeGenerator()
-        result = RAGService(retriever=FakeRetriever([]), generator=generator).ask("问题")
-        self.assertIsNone(result.answer)
-        self.assertEqual(result.hits, [])
+        service = RAGService(FakeRetriever(evidence()), FakeReranker(), EvidencePolicy(None), generator)
+        result = service.ask("问题")
+        self.assertTrue(result.answerable)
+        self.assertFalse(result.threshold_calibrated)
+        self.assertEqual(result.reason, "threshold_not_calibrated")
+        self.assertEqual(result.answer, "测试回答")
+        self.assertEqual(len(generator.calls), 1)
+
+    def test_empty_retrieval_rejects_without_generator(self):
+        """没有候选时直接拒答，不调用重排器的模型路径或生成器。"""
+        generator = FakeGenerator()
+        service = RAGService(FakeRetriever([]), FakeReranker(), EvidencePolicy(None), generator)
+        result = service.ask("问题")
+        self.assertFalse(result.answerable)
+        self.assertEqual(result.evidence_status, "no_candidates")
+        self.assertEqual(result.answer, REFUSAL_ANSWER)
         self.assertEqual(generator.calls, [])
+
+    def test_below_threshold_rejects_without_generator(self):
+        """最终 Top-1 低于已校准阈值时统一拒答且不调用生成器。"""
+        generator = FakeGenerator()
+        service = RAGService(FakeRetriever(evidence()), FakeReranker(.4), EvidencePolicy(.6), generator)
+        result = service.ask("问题")
+        self.assertFalse(result.answerable)
+        self.assertEqual(result.evidence_status, "below_threshold")
+        self.assertEqual(generator.calls, [])
+
+    def test_at_or_above_threshold_calls_generator(self):
+        """Top-1 达标时正常生成并返回最终重排引用。"""
+        generator = FakeGenerator()
+        service = RAGService(FakeRetriever(evidence()), FakeReranker(.6), EvidencePolicy(.6), generator)
+        result = service.ask("问题")
+        self.assertTrue(result.answerable)
+        self.assertTrue(result.threshold_calibrated)
+        self.assertIsNone(result.reason)
+        self.assertEqual(len(generator.calls), 1)
 
 
 if __name__ == "__main__":

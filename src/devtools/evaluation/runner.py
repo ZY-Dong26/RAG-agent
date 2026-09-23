@@ -59,7 +59,8 @@ def retrieval_metrics(hits, targets, k):
             "reciprocal_rank_at_k": 1 / rank if rank else 0.0}
 
 
-def run_evaluation(rows, source_map, retriever, generator, directory, signature, k=5, limit=None, retry_failed=False):
+def run_evaluation(rows, source_map, retriever, generator, directory, signature, k=5, limit=None,
+                   retry_failed=False, reranker=None, evidence_policy=None):
     """串行执行并逐题保存；只有 question 和检索 hits 会交给生成器。
     limit 限制本次实际执行题数；恢复自动跳过成功题，失败题需显式 retry_failed。
     中断时导出已完成题目；当前尚未保存的 API 请求可能已计费，恢复时会重做该题。
@@ -97,17 +98,27 @@ def run_evaluation(rows, source_map, retriever, generator, directory, signature,
                 targets = sorted({source_map[ref] for ref in row["reference_context_ids"]})
                 result = {**row, "targets": targets, "missing_sources": sorted(set(targets)-available),
                           "hits": [], "answer": None, "usage": None, "metrics": None,
-                          "retrieval_seconds": None, "generation_seconds": None, "error": None}
+                          "retrieval_seconds": None, "generation_seconds": None, "error": None,
+                          "answerable": None, "evidence_status": None}
                 report(f"[评测 {number}/{len(rows)}] 题目 {qid}：{row['question_type']}")
                 started = time.perf_counter()
                 phase = "retrieval"
                 try:
                     with stage("检索评测资料"):
                         step = time.perf_counter()
-                        result["hits"] = retriever.retrieve(row["question"], top_k=k)
+                        # 新问答链路先保留完整 RRF 候选供 BGE 重排；旧测试未注入重排器时
+                        # 维持原有 top-k 检索行为，避免离线替身加载真实模型。
+                        candidates = retriever.retrieve(row["question"], top_k=None if reranker else k)
+                        result["hits"] = (reranker.rerank(row["question"], candidates, top_k=k)
+                                          if reranker else candidates)
                         result["retrieval_seconds"] = time.perf_counter()-step
                     result["metrics"] = retrieval_metrics(result["hits"], targets, k)
-                    if result["hits"]:
+                    decision = evidence_policy.evaluate(result["hits"]) if evidence_policy else None
+                    result["answerable"] = decision.answerable if decision else bool(result["hits"])
+                    result["evidence_status"] = decision.status if decision else (
+                        "answerable" if result["hits"] else "no_candidates"
+                    )
+                    if result["answerable"]:
                         phase = "generation"
                         # 保存实际发送的提示词，明确哪些证据因字符预算被截掉。
                         result["messages"] = generator.build_prompt(row["question"], result["hits"])
@@ -118,7 +129,8 @@ def run_evaluation(rows, source_map, retriever, generator, directory, signature,
                         result["usage"] = getattr(generator, "last_usage", None)
                         result["status"] = "answered" if result["answer"] else "empty_answer"
                     else:
-                        result["status"] = "no_hits"
+                        result["status"] = ("no_hits" if result["evidence_status"] == "no_candidates"
+                                            else "rejected")
                 except Exception as error:
                     # 不保存异常原文：HTTP 异常可能包含鉴权地址或密钥。
                     result["status"] = "error"

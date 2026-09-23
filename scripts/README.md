@@ -3,7 +3,7 @@
 ```text
 scripts/
 ├── parse_documents.py   # 只解析 PDF（MinerU 云端），不建向量库
-├── build_index.py       # 增量建库：解析 + 切块 + 向量化 + 发布索引
+├── build_index.py       # 增量建库：解析 + 切块 + FAISS/BM25 原子发布
 ├── chat.py              # 用当前索引做命令行问答
 ├── evaluate.py          # 批量回答评测集并统计检索指标（不调用裁判模型）
 ├── export_results.py    # 从已有 items 纯本地重新导出全部汇总产物
@@ -28,7 +28,9 @@ scripts/
 | `--force` | 强制重新切块和算向量（仍复用 MinerU 解析缓存，不重新上传 PDF） |
 | `--prune-missing` | 从索引移除源 PDF 已缺失的文档（不删磁盘文件） |
 
-索引发布到 `data/vector_db/`，报告见 `data/processed/build_report.json`。
+索引发布到 `data/vector_db/`，每代同时包含 FAISS、`bm25/`、chunk 元数据和构建清单。
+旧代只有 FAISS 时必须重建；未变化文档复用解析与向量产物，本地补建 BM25 不会重新上传 PDF。
+报告见 `data/processed/build_report.json`。
 
 ## 2. 问答：chat.py
 
@@ -36,7 +38,9 @@ scripts/
 .\.venv\Scripts\python.exe scripts/chat.py
 ```
 
-无参数。输入问题后本地检索 + 云端生成；输入 `exit`/`quit`/`q`/`退出` 或 Ctrl+C 结束。重新建库后需重启本入口才会加载新索引。
+无参数。输入问题后执行 Dense/BM25 → RRF → BGE 重排 → 证据门控 → 云端生成；
+拒答时不会调用回答模型。输入 `exit`/`quit`/`q`/`退出` 或 Ctrl+C 结束。
+重新建库后需重启本入口才会加载新索引。
 
 ## 3. PDF 解析：parse_documents.py
 
@@ -66,7 +70,7 @@ scripts/
 |---|---|
 | `--output <目录>` | 指定结果目录；目录存在且快照一致时跳过已做题目、续跑剩余；快照（数据集/索引/代码/模型/top_k）变了会拒绝混跑 |
 | `--limit N` | 本次最多跑 N 题（试跑用）；续跑时表示"本次再跑 N 题" |
-| `--top-k N` | 每题取前 N 个片段；改 K 必须换新目录 |
+| `--top-k N` | BGE 重排后保留前 N 个片段；改 K 必须换新目录 |
 | `--retry-failed` | 重跑状态为 error 的旧题（会再产生费用） |
 | `--dataset` / `--source-map` | 换用自定义评测集与文档映射 |
 
@@ -110,6 +114,13 @@ scripts/
 ```
 
 报告输出到 `data/outputs/debug/`。
+
+## 本地重排与阈值校准
+
+- 默认模型目录为 `model/bge-reranker-v2-m3`，也可在 `.env` 用 `RERANKER_MODEL` 指定绝对或相对路径；程序不会联网下载。
+- 临时排障可设置 `RERANK_ENABLED=false`，随后重启脚本。关闭时只按 RRF 排名，不能使用重排分数阈值。
+- `RERANK_REJECT_THRESHOLD` 默认在 `src/rag_agent/config.py` 中为 `None`。先用含不可回答问题的评测集观察 Top-1 重排分数，再选择满足目标误拒率/漏拒率的阈值，不要直接采用 0.5。
+- 只做离线程序回归可运行：`.\.venv\Scripts\python.exe -B -m unittest discover -s tests -v`。
 
 ## PyCharm 运行配置
 

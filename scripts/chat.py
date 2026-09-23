@@ -1,8 +1,8 @@
 """
 chat.py —— 命令行问答入口（常驻 REPL）
 
-职责：启动时把 embedding模型 + FAISS索引 加载进内存（整个会话只做一次），
-     然后循环接收用户问题：检索 → 云端LLM生成 → 打印回答与引用来源。
+职责：启动时加载混合索引和本地模型（整个会话只做一次），然后循环接收用户问题：
+     Dense + BM25 → RRF → BGE 重排 → 证据门控 → 云端 LLM → 展示最终引用。
 ·
 运行（在项目根目录）：
      python scripts/chat.py
@@ -35,9 +35,9 @@ EXIT_WORDS = {"exit", "quit", "q", "退出", "再见"}
 def main():
     # 1. 一次性加载：模型 + 索引（最耗时的部分，整个会话只做一次）
     """启动终端问答：加载依赖一次，逐轮调用服务；退出词或 Ctrl+C 结束会话。"""
-    print("正在加载 embedding模型 + FAISS索引（首次约几秒，请稍等）...")
+    print("正在加载 Embedding、FAISS 和 BM25 索引（首次约几秒，请稍等）...")
     try:
-        with stage("加载 FAISS 索引和本地 Embedding 模型"):
+        with stage("加载 FAISS、BM25 索引和本地 Embedding 模型"):
             ret = Retriever()
     except (RuntimeError, ValueError, OSError) as error:
         print(f"[启动失败] {error}；请先运行 scripts/build_index.py", flush=True)
@@ -68,22 +68,29 @@ def main():
             break
 
         try:
-            # 检索 → 生成（模型和索引已在内存，每问一次只算向量不重载）
+            # 完整链路由服务层统一编排；脚本只负责终端输入输出。
             result = service.ask(question)
             hits = result.hits
-            if not hits:
-                print("向量库中没有找到相关内容。\n")
+            if not result.answerable:
+                if result.evidence_status == "no_candidates":
+                    print(f"\n拒答: {result.answer}（没有检索候选）\n")
+                else:
+                    print(f"\n拒答: {result.answer}（相关性不足）\n")
                 continue
 
             reply = result.answer
+            if not result.threshold_calibrated:
+                print("\n提示: 重排拒答阈值尚未通过评测集校准，本轮未执行分数硬拒答。")
 
             # 打印回答 + 引用来源（可溯源）
             print(f"\n回答: {reply}\n")
             print("引用来源:")
             for h in hits:
                 m = h["metadata"]
+                rerank = m.get("rerank_score")
+                score_text = f"重排分数{rerank:.4f}" if rerank is not None else "按 RRF 排名"
                 print(f"  [{m.get('rank', '?')}] {m.get('source', '?')} "
-                      f"第{m.get('page', '?')}页 (相似度{m['score']:.4f})")
+                      f"第{m.get('page', '?')}页 ({score_text})")
             print()
         except Exception as e:
             print(f"[错误] {e}\n")

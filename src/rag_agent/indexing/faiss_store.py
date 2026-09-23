@@ -1,7 +1,7 @@
 # faiss_store.py —— 向量存储层：用FAISS把向量和chunk关联起来
 # 职责：只负责【向量入库、相似度检索、索引持久化】，不关心向量怎么来
 # 检索约定：embedder 输出的向量已L2归一化 → 用IndexFlatIP(内积)，内积即余弦相似度
-# 持久化：vector_db/generations/<版本>/ 下保存 index.faiss 与 chunks_meta.json
+# 持久化：vector_db/generations/<版本>/ 下保存 FAISS、BM25 与 chunks_meta.json
 #          current.json 指定活动版本；没有版本指针时兼容根目录旧文件
 #         索引第i行 ↔ chunks_meta.json第i个chunk，一一对应
 
@@ -107,10 +107,11 @@ class VectorStore:
             })
         return hits
 
-    def save(self, manifest=None):
+    def save(self, manifest=None, bm25_store=None):
         """
         发布一份完整索引：写新版本 → 回读验证 → 原子切换 current.json。
         :param manifest: 本次建库签名及配置摘要，用于下次判断能否复用
+        :param bm25_store: 已按相同 chunk 顺序构建的 BM25Store；省略时在本地自动构建
         为什么不用先覆盖 index.faiss 再覆盖 chunks_meta.json？
         如果两次写入之间出错，会出现“新向量配旧文本”的错误引用。
         这里先把相关文件放进独立版本目录，全部通过验证后才切换一个指针文件。
@@ -127,14 +128,26 @@ class VectorStore:
         index_path = directory / "index.faiss"
         faiss.write_index(self.index, str(index_path))
         atomic_json(directory / "chunks_meta.json", self.chunks)
-        atomic_json(directory / "build_manifest.json", manifest or {})
-        # 2. 从磁盘重新读取刚写入的索引，而不是只验证内存对象，检查保存结果是否完整。
+
+        # BM25 与 FAISS 必须作为一代索引共同发布。BM25 写入或校验失败时，新目录可以保留
+        # 用于诊断，但 current.json 尚未切换，因此线上仍读取上一代完整索引。
+        from rag_agent.indexing.bm25_store import BM25Store
+        bm25_store = bm25_store or BM25Store().build(self.chunks)
+        if [c.get("metadata", {}).get("chunk_id") for c in bm25_store.chunks] != [
+                c.get("metadata", {}).get("chunk_id") for c in self.chunks]:
+            raise ValueError("BM25 与 FAISS 的 chunk 数量或 ID 顺序不一致")
+        bm25_store.save(directory / "bm25")
+        manifest = {**(manifest or {}), "bm25": bm25_store.info()}
+        atomic_json(directory / "build_manifest.json", manifest)
+
+        # 2. 从磁盘重新读取刚写入的两种索引，而不是只验证内存对象，检查保存结果是否完整。
         candidate = VectorStore(directory).load()
         if candidate.index.d != self.index.d or candidate.chunks != self.chunks:
             raise ValueError("新索引回读验证失败，保留旧索引")
         # 检查回读向量中的 NaN/Inf；这些非正常数值会让相似度计算失去意义。
         if not np.isfinite(candidate.index.reconstruct_n(0, candidate.index.ntotal)).all():
             raise ValueError("新索引包含无效向量，保留旧索引")
+        BM25Store.load(directory / "bm25", candidate.chunks)
         # 3. 唯一发布点：此前任何步骤失败都不会改变当前版本指针。
         atomic_json(self.persist_dir / "current.json", {"generation": generation})
         self.index_path = index_path

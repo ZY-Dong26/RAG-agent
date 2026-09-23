@@ -53,8 +53,9 @@ def _hit_rows(trace: dict) -> str:
         sent = marker in sent_text
         status = "已发送" if sent else "未发送"
         status_class = "sent" if sent else "dropped"
-        score = metadata.get("score")
+        score = metadata.get("rerank_score", metadata.get("fusion_score"))
         score_text = f"{score:.4f}" if isinstance(score, (int, float)) else "—"
+        score_name = "重排" if metadata.get("rerank_score") is not None else "RRF"
         rows.append(
             f"""
             <details class="chunk {status_class}" {'open' if fallback_rank == 1 else ''}>
@@ -62,7 +63,7 @@ def _hit_rows(trace: dict) -> str:
                 <span class="rank">#{_escape(rank)}</span>
                 <span class="status">{status}</span>
                 <span>{_escape(metadata.get('source', '未知来源'))} · 第{_escape(metadata.get('page', '?'))}页</span>
-                <span class="meta">相似度 {score_text} · {len(text)} 字符 · {_escape(metadata.get('block_type', '未知类型'))}</span>
+                <span class="meta">{score_name} {score_text} · {len(text)} 字符 · {_escape(metadata.get('block_type', '未知类型'))}</span>
               </summary>
               <pre>{_escape(text)}</pre>
               <div class="chunk-meta">chunk_id: {_escape(metadata.get('chunk_id', '—'))}　segment: {_escape(metadata.get('segment_index', '—'))}</div>
@@ -117,6 +118,8 @@ def _render_html(trace: dict) -> str:
     )
     error = trace.get("error")
     answer = trace.get("answer") or ""
+    retrieval_text = "—" if retrieval is None else f"{retrieval:.2f}s"
+    generation_text = "—" if generation is None else f"{generation:.2f}s"
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -144,8 +147,8 @@ pre{{white-space:pre-wrap;word-break:break-word;background:#f8fafc;color:var(--c
 <div class="question">{_escape(trace.get('question'))}</div>
 <div class="stats">
   <div class="stat"><span>召回候选</span><b>{len(trace.get('hits', []))}</b><span>实际发送 {sent_count} 条</span></div>
-  <div class="stat"><span>检索耗时</span><b>{retrieval:.2f}s</b><span>问题向量化与 FAISS</span></div>
-  <div class="stat"><span>生成耗时</span><b>{generation:.2f}s</b><span>云端模型请求</span></div>
+  <div class="stat"><span>检索与门控耗时</span><b>{retrieval_text}</b><span>混合召回、RRF 与重排</span></div>
+  <div class="stat"><span>生成耗时</span><b>{generation_text}</b><span>云端模型请求</span></div>
   <div class="stat"><span>Prompt 字符</span><b>{prompt_chars}</b><span>system + user</span></div>
 </div>
 <nav class="tabs" aria-label="诊断视图">

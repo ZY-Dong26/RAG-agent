@@ -1,85 +1,131 @@
-# retriever.py —— 检索层：问题 → 向量 → 召回 top-k chunk
-# 职责：只做"召回"，不写答案。连接 indexing.embedder 的问题向量化与 indexing.faiss_store 的相似度查询
-# 关键设计：
-#   1. 组合而非继承：Retriever持有 embedding + vector_store 两个实例，
-#      embedding负责"问题→查询向量"，vector_store负责"向量→命中chunk"
-#   2. 依赖注入：构造函数可传现成实例（测试时传假对象、问答时共享加载），
-#      不传则自动从磁盘加载（模型 + FAISS索引）
+"""
+retriever.py —— Dense + BM25 混合召回与 RRF 融合
 
+职责：
+    1. 用 Qwen3 Embedding + FAISS 召回语义相近的候选。
+    2. 用中文 BM25 召回关键词、型号和数字匹配的候选。
+    3. 按稳定 chunk_id 去重，以加权 RRF 融合两路排名。
+
+本模块不加载重排模型、不判断证据是否充分，也不调用生成模型。Dense 余弦分数与 BM25
+分数的量纲不同，不能直接相加；RRF 只使用各自排名，使两路结果可以稳定组合。
+"""
 from rag_agent import config
+from rag_agent.common.progress import report
+
+
+def reciprocal_rank_fusion(dense_hits, bm25_hits, top_k=None, rrf_k=None,
+                           dense_weight=None, bm25_weight=None):
+    """
+    按 chunk_id 合并两路候选，并计算 ``weight / (rrf_k + rank)``。
+
+    每条结果保留 dense_rank/dense_score、bm25_rank/bm25_score 与 fusion_score；只在一路
+    出现的候选同样参与排序。相同融合分数按最佳单路排名和 chunk_id 稳定排序。
+    """
+    top_k = config.FUSION_TOP_K if top_k is None else top_k
+    rrf_k = config.RRF_K if rrf_k is None else rrf_k
+    dense_weight = config.RRF_DENSE_WEIGHT if dense_weight is None else dense_weight
+    bm25_weight = config.RRF_BM25_WEIGHT if bm25_weight is None else bm25_weight
+    if top_k <= 0 or rrf_k < 0:
+        return []
+
+    merged = {}
+
+    def add(hits, route, weight):
+        for fallback_rank, hit in enumerate(hits, 1):
+            metadata = hit.get("metadata", {})
+            chunk_id = metadata.get("chunk_id")
+            if not chunk_id:
+                raise ValueError("混合召回结果缺少稳定 chunk_id")
+            rank = int(metadata.get(f"{route}_rank", fallback_rank))
+            item = merged.setdefault(chunk_id, {
+                "text": hit["text"],
+                "metadata": {key: value for key, value in metadata.items()
+                             if key not in {"score", "rank"}},
+                "_best_rank": rank,
+                "_score": 0.0,
+            })
+            item["_best_rank"] = min(item["_best_rank"], rank)
+            item["_score"] += weight / (rrf_k + rank)
+            item["metadata"][f"{route}_rank"] = rank
+            route_score = metadata.get(f"{route}_score", metadata.get("score"))
+            if route_score is not None:
+                item["metadata"][f"{route}_score"] = float(route_score)
+
+    add(dense_hits, "dense", dense_weight)
+    add(bm25_hits, "bm25", bm25_weight)
+    ordered = sorted(merged.values(), key=lambda item: (
+        -item["_score"], item["_best_rank"], item["metadata"]["chunk_id"],
+    ))[:top_k]
+    for rank, item in enumerate(ordered, 1):
+        item["metadata"]["fusion_score"] = item.pop("_score")
+        item["metadata"]["fusion_rank"] = rank
+        item["metadata"]["rank"] = rank
+        item.pop("_best_rank")
+    return ordered
 
 
 class Retriever:
-    """检索器：把用户问题转成向量，从向量库召回最相似的top_k个chunk"""
+    """执行两路召回并返回去重后的 RRF 候选，供后续重排器使用。"""
 
-    def __init__(self, vector_store=None, embedding=None, top_k=None):
-        """
-        :param vector_store: faiss_store.VectorStore实例；为None时自动load()磁盘索引
-        :param embedding: embedder.Embedding实例；为None时自动加载本地模型（首次较慢）
-        :param top_k: 召回chunk数量，默认config.TOP_K
-        """
-        self.top_k = top_k or config.TOP_K
+    def __init__(self, vector_store=None, bm25_store=None, embedding=None,
+                 dense_top_k=None, bm25_top_k=None, fusion_top_k=None):
+        self.dense_top_k = dense_top_k or config.DENSE_TOP_K
+        self.bm25_top_k = bm25_top_k or config.BM25_TOP_K
+        self.fusion_top_k = fusion_top_k or config.FUSION_TOP_K
 
-        # 向量库：优先用外部注入的实例（避免重复load文件）
         if vector_store is not None:
             self.store = vector_store
         else:
-            from rag_agent.indexing import faiss_store
-            self.store = faiss_store.VectorStore().load()
+            from rag_agent.indexing.faiss_store import VectorStore
+            self.store = VectorStore().load()
 
-        # 查询向量化：优先用外部注入的实例（避免重复加载大模型）
+        if bm25_store is not None:
+            self.bm25 = bm25_store
+        else:
+            from rag_agent.indexing.bm25_store import BM25Store
+            # VectorStore.load 已把 index_path 固定到当前代；BM25 必须从同一目录回读，
+            # 因而 current.json 在初始化过程中即使变化也不会造成跨代混读。
+            self.bm25 = BM25Store.load(self.store.index_path.parent / "bm25", self.store.chunks)
+
         if embedding is not None:
             self.emb = embedding
         else:
-            from rag_agent.indexing import embedder
-            self.emb = embedder.Embedding()
+            from rag_agent.indexing.embedder import Embedding
+            self.emb = Embedding()
 
     def retrieve(self, query, top_k=None):
         """
-        检索主流程：query → 查询向量 → FAISS召回 → 命中chunk列表
-        :param query: 用户问题字符串
-        :param top_k: 本次召回数量，默认用self.top_k
-        :return: hits，list[dict]，每项：
-                 {"text": 原文, "metadata": {"source","page","chunk_id","score","rank"}}
+        执行 Dense Top-N、BM25 Top-N 与 RRF，返回最多 fusion_top_k 条候选。
+
+        :param top_k: 可覆盖本次融合候选数，主要供离线评测使用；正常问答采用集中配置。
         """
-        k = top_k or self.top_k
-
-        # 1. 问题向量化（embedder：套用模型目录的查询指令模板）
         query_vector = self.emb.embed_query(query)
+        dense_hits = self.store.search(query_vector, top_k=self.dense_top_k)
+        for rank, hit in enumerate(dense_hits, 1):
+            score = hit["metadata"].pop("score", None)
+            hit["metadata"]["dense_rank"] = rank
+            if score is not None:
+                hit["metadata"]["dense_score"] = float(score)
+        report(f"[召回] Dense {len(dense_hits)} 条，BM25 正在查询")
 
-        # 2. 相似度召回（faiss_store：返回带 score 的 chunk，按相似度降序）
-        hits = self.store.search(query_vector, top_k=k)
-
-        # 3. 补上排名序号，供展示和引用编号使用
-        for i, hit in enumerate(hits, 1):
-            hit["metadata"]["rank"] = i
-
-        return hits
+        bm25_hits = self.bm25.search(query, top_k=self.bm25_top_k)
+        report(f"[召回] BM25 {len(bm25_hits)} 条")
+        fused = reciprocal_rank_fusion(
+            dense_hits,
+            bm25_hits,
+            top_k=self.fusion_top_k if top_k is None else top_k,
+        )
+        report(f"[融合] RRF 去重后保留 {len(fused)} 条候选")
+        return fused
 
     @staticmethod
     def format_context(hits):
-        """
-        把命中chunk拼成给LLM的上下文文本（带编号和来源）
-        这是可选的展示辅助方法；当前 Generator.build_prompt 自行拼接编号和正文，并未调用此方法
-        """
+        """把候选整理为带来源和页码的可读文本，供调试工具使用。"""
         blocks = []
         for hit in hits:
             meta = hit["metadata"]
-            rank = meta.get("rank", "?")
-            source = meta.get("source", "未知来源")
-            page = meta.get("page", "?")
-            blocks.append(f"[{rank}] 来源:{source} 第{page}页\n{hit['text'].strip()}")
+            blocks.append(
+                f"[{meta.get('rank', '?')}] 来源:{meta.get('source', '未知来源')} "
+                f"第{meta.get('page', '?')}页\n{hit['text'].strip()}"
+            )
         return "\n\n".join(blocks)
-
-
-if __name__ == "__main__":
-    # 自测：python -m rag_agent.qa.retriever
-    # 依赖：先跑过 python scripts/build_index.py 建库
-    retriever = Retriever()
-    hits = retriever.retrieve("什么是检索增强生成？")
-
-    print(f"召回 {len(hits)} 个chunk：\n")
-    for h in hits:
-        m = h["metadata"]
-        print(f"[{m['rank']}] {m['source']} 第{m['page']}页 相似度={m['score']:.4f}")
-        print(f"    文本预览: {h['text'][:50]}...")

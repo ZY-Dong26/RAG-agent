@@ -77,6 +77,7 @@ class JudgingTests(unittest.TestCase):
             self.assertEqual(len(completions.calls), 1)
             self.assertEqual(completions.calls[0]["temperature"], 0.4)
             self.assertEqual(completions.calls[0]["max_tokens"], 321)
+            self.assertEqual(completions.calls[0]["extra_body"], {"thinking": {"type": "disabled"}})
             self.assertEqual(load_items(root)[0]["judge"]["scores"]["correctness"], 3)
             self.assertEqual(load_items(root)[0]["judge"]["temperature"], 0.4)
             self.assertEqual(load_items(root)[0]["judge"]["max_tokens"], 321)
@@ -93,7 +94,10 @@ class JudgingTests(unittest.TestCase):
     def test_prompt_and_json_validation(self):
         """裁判能看到要求的五类信息；非法或越界 JSON 明确失败。"""
         messages = build_judge_messages(sample_item(1))
+        system = messages[0]["content"]
         user = messages[1]["content"]
+        self.assertIn("空回答或表示未找到相关内容", system)
+        self.assertIn("reason 字段控制在 50 字以内", system)
         for expected in ("问题1", "参考答案", "覆盖关键事实", "RAG 回答", "检索证据"):
             self.assertIn(expected, user)
         scores, reason = parse_judge_json('{"correctness":1,"completeness":2,"relevance":3,"reason":"理由"}')

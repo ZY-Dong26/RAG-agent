@@ -21,6 +21,12 @@ def _llm_setting(name, default):
     return os.environ.get(name, _llm_env.get(name) or default)
 
 
+def _model_path(value, default):
+    """把模型配置解析为绝对路径；相对路径统一以项目根目录为基准。"""
+    path = Path(value or default).expanduser()
+    return str(path if path.is_absolute() else BASE_DIR / path)
+
+
 # 项目根目录：本文件位于 src/rag_agent/，向上三级回到项目根目录
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -36,14 +42,33 @@ CHUNK_SIZE = 800        # 每个文本块最大字符数
 CHUNK_OVERLAP = 150     # 相邻文本块重叠字符数（保留上下文）
 
 # ========== 检索参数 ==========
-TOP_K = 5               # 检索时返回的候选chunk数量
+# 两路召回的原始分数不在同一量纲，先各自取候选，再用排名倒数 RRF 融合。
+DENSE_TOP_K = 30
+BM25_TOP_K = 30
+FUSION_TOP_K = 20
+RRF_K = 60
+RRF_DENSE_WEIGHT = 1.0
+RRF_BM25_WEIGHT = 1.0
+
+# BGE 重排只处理融合后的少量候选。拒答阈值必须通过项目自己的评测集校准；
+# None 表示尚未校准，因此默认不会仅凭重排分数硬拒答。
+RERANK_TOP_K = 5
+RERANK_MAX_LENGTH = 1024
+RERANK_BATCH_SIZE = 8
+RERANK_REJECT_THRESHOLD = None
+RERANK_ENABLED = _llm_setting("RERANK_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+# 保留旧名称供评测脚本和外部调用使用；它现在表示最终交给生成器的证据数量。
+TOP_K = RERANK_TOP_K
 
 
 # ========== 本地Embedding模型配置 ==========
 # 本地模型路径：相对路径以项目根目录为基准，也支持环境变量指定绝对路径
-_embedding_path = Path(_llm_setting("EMBEDDING_MODEL", "") or "model/Qwen3-Embedding-0.6B").expanduser()
-EMBEDDING_MODEL = str(_embedding_path if _embedding_path.is_absolute() else BASE_DIR / _embedding_path)
+EMBEDDING_MODEL = _model_path(_llm_setting("EMBEDDING_MODEL", ""), "model/Qwen3-Embedding-0.6B")
 EMBEDDING_MAX_LENGTH = 8192   # Qwen3-Embedding支持最长32k，取8192平衡速度
+
+# 本地重排模型只从磁盘加载，不允许 transformers 自动联网下载。
+RERANKER_MODEL = _model_path(_llm_setting("RERANKER_MODEL", ""), "model/bge-reranker-v2-m3")
 
 
 # ========== 云端LLM配置（OpenAI兼容协议） ==========

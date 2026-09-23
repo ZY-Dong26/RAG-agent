@@ -52,7 +52,7 @@ class Generator:
         """
         拼接发给LLM的消息列表（不联网，纯本地拼装，可单独测试）
         :param query: 用户问题
-        :param hits: Retriever的返回（含text/metadata/score/rank）
+        :param hits: 服务层重排后的最终证据（含 text、来源、rank 和 rerank_score 等元数据）
         :param max_chars: 资料总字符上限，遇到第一条放不下的资料即停止，不截断该块，也不再尝试后续块
         :return: messages，[{"role":"system",...}, {"role":"user",...}]
         """
@@ -113,11 +113,11 @@ if __name__ == "__main__":
     fake_hits = [
         {
             "text": "检索增强生成（RAG）是一种结合检索与生成的大模型技术。",
-            "metadata": {"source": "RAG综述.pdf", "page": 1, "score": 0.65, "rank": 1},
+            "metadata": {"source": "RAG综述.pdf", "page": 1, "rerank_score": 0.81, "rank": 1},
         },
         {
             "text": "RAG先检索相关资料，再让大模型基于资料生成答案。",
-            "metadata": {"source": "RAG综述.pdf", "page": 3, "score": 0.64, "rank": 2},
+            "metadata": {"source": "RAG综述.pdf", "page": 3, "rerank_score": 0.76, "rank": 2},
         },
     ]
     messages = Generator.build_prompt("什么是RAG？", fake_hits)
