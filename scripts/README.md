@@ -2,7 +2,7 @@
 
 ```text
 scripts/
-├── parse_documents.py   # 只解析 PDF（MinerU 云端），不建向量库
+├── parse_documents.py   # MinerU 解析 + 本地规则后处理，不建向量库
 ├── build_index.py       # 增量建库：解析 + 切块 + FAISS/BM25 原子发布
 ├── chat.py              # 用当前索引做命令行问答
 ├── evaluate.py          # 批量回答评测集并统计检索指标（不调用裁判模型）
@@ -52,7 +52,7 @@ scripts/
 .\.venv\Scripts\python.exe scripts/parse_documents.py --file "data/raw/xxx.pdf" --resubmit
 ```
 
-结果在 `data/processed/mineru/`，最近一次解析报告是 `data/processed/parse_report.json`。
+MinerU 原始 ZIP、解压目录和适配缓存保存在 `data/processed/mineru/`；最近一次解析报告是 `data/processed/parse_report.json`，规则后处理报告是 `data/processed/postprocess_report.json`。后处理完全本地，失败时回退原始适配结果。
 
 ## 4. 批量评测：evaluate.py
 

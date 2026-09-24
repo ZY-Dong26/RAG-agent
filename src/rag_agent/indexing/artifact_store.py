@@ -83,7 +83,7 @@ def _artifact_dir(root, key):
     return Path(root) / "document_artifacts" / key
 
 
-def save_artifact(root, key, documents, chunks, vectors, manifest):
+def save_artifact(root, key, documents, chunks, vectors, manifest, postprocess_report=None):
     """
     原子发布一份单文档向量产物，并立即从磁盘回读验收。
 
@@ -109,19 +109,30 @@ def save_artifact(root, key, documents, chunks, vectors, manifest):
 
         atomic_json(temporary / "documents.json", documents)
         atomic_json(temporary / "chunks.json", chunks)
+        # 后处理产物与向量产物同目录保存，documents.json 继续兼容旧调用方；refined_document.json
+        # 明确表达三阶段边界，postprocess_report.json 则提供规则审计和 fail-open 状态。
+        if postprocess_report is not None:
+            atomic_json(temporary / "refined_document.json", documents)
+            atomic_json(temporary / "postprocess_report.json", postprocess_report)
         # 读写两端均禁止 pickle；这里只保存 float32 数组，不序列化任意 Python 对象。
         np.save(temporary / "vectors.npy", matrix, allow_pickle=False)
+        artifact_hashes = {
+            "documents.json": file_hash(temporary / "documents.json"),
+            "chunks.json": file_hash(temporary / "chunks.json"),
+            "vectors.npy": file_hash(temporary / "vectors.npy"),
+        }
+        if postprocess_report is not None:
+            artifact_hashes.update({
+                "refined_document.json": file_hash(temporary / "refined_document.json"),
+                "postprocess_report.json": file_hash(temporary / "postprocess_report.json"),
+            })
         complete_manifest = {
             **manifest,
             "artifact_key": key,
             "documents": len(documents),
             "chunks": len(chunks),
             "dimension": int(matrix.shape[1]),
-            "artifacts": {
-                "documents.json": file_hash(temporary / "documents.json"),
-                "chunks.json": file_hash(temporary / "chunks.json"),
-                "vectors.npy": file_hash(temporary / "vectors.npy"),
-            },
+            "artifacts": artifact_hashes,
         }
         # manifest 最后写入；它相当于“这份产物已经完整”的提交标记。
         atomic_json(temporary / "manifest.json", complete_manifest)
@@ -142,10 +153,16 @@ def load_artifact(root, key):
     """
     directory = _artifact_dir(root, key)
     manifest_path = directory / "manifest.json"
-    required = [directory / "documents.json", directory / "chunks.json", directory / "vectors.npy"]
-    if not manifest_path.is_file() or not all(path.is_file() for path in required):
+    if not manifest_path.is_file():
         raise FileNotFoundError(f"文档向量产物不完整：{key}")
     manifest = read_json(manifest_path)
+    required = [directory / "documents.json", directory / "chunks.json", directory / "vectors.npy"]
+    optional_names = ("refined_document.json", "postprocess_report.json")
+    if any(name in manifest.get("artifacts", {}) for name in optional_names):
+        # 新产物必须同时包含后处理正文和报告，拒绝复用只写完一半的目录。
+        required.extend(directory / name for name in optional_names)
+    if not all(path.is_file() for path in required):
+        raise FileNotFoundError(f"文档向量产物不完整：{key}")
     if manifest.get("artifact_key") != key:
         raise ValueError("文档向量产物键与清单不一致")
     for path in required:
@@ -161,4 +178,7 @@ def load_artifact(root, key):
             or len(chunks) != manifest.get("chunks") or vectors.shape[0] != len(chunks)
             or vectors.shape[1] != manifest.get("dimension") or not np.isfinite(vectors).all()):
         raise ValueError("文档向量产物内容、数量或维度不一致")
-    return {"documents": documents, "chunks": chunks, "vectors": vectors, "manifest": manifest}
+    postprocess_report = (read_json(directory / "postprocess_report.json")
+                          if (directory / "postprocess_report.json").is_file() else None)
+    return {"documents": documents, "chunks": chunks, "vectors": vectors,
+            "manifest": manifest, "postprocess_report": postprocess_report}

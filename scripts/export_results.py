@@ -11,7 +11,7 @@ scripts/export_results.py —— 从已有评测批次纯本地重建全部导�
     - 判分中断后手动刷新一次产物。
 
 用法：
-    python scripts/export_results.py data/outputs/evaluation/<批次目录>
+    python scripts/export_results.py data/outputs/evaluation/20260923-143550-697003
 """
 import argparse
 import sys

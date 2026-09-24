@@ -157,14 +157,16 @@ def judge_summary_markdown(rows):
                   for name in sorted({row.get("question_type", "未分类") for row in rows}))
     lines = ["# RAG 评测与模型判分汇总", "",
              "检索指标按已有逐题记录统计；模型判分范围为 0–3，未判题不参与均值。", "",
-             "| 题型 | 题数 | Hit@K | Recall@K | MRR@K | 平均耗时 | 正确性 | 完整性 | 相关性 |",
-             "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
+             "| 题型 | 题数 | Hit@K | Recall@K | MRR@K | 检索耗时 | 生成耗时 | 总耗时 | 正确性 | 完整性 | 相关性 |",
+             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for name, group in groups:
         summary = summarize(group)
         scores = [_score_average(group, key) for key in ("correctness", "completeness", "relevance")]
         formatted = ["" if value is None else f"{value:.2f}" for value in scores]
         lines.append(f"| {name} | {len(group)} | {_pct(summary['document_hit_at_k'])} | "
                      f"{_pct(summary['document_recall_at_k'])} | {_pct(summary['document_mrr_at_k'])} | "
+                     f"{_seconds(summary['mean_retrieval_seconds'])} | "
+                     f"{_seconds(summary['mean_generation_seconds'])} | "
                      f"{_seconds(summary['mean_total_seconds'])} | " + " | ".join(formatted) + " |")
     return "\n".join(lines) + "\n"
 

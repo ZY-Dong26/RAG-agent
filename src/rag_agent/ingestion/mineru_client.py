@@ -277,11 +277,20 @@ class MinerUCloud:
         # 适配器升级只需重做本地转换。按旧版本计算同一文件的精确缓存键，
         # 迁移已经下载的原始 ZIP 或已有任务 ID，不会因此重新上传或创建任务。
         if not state and not resubmit:
-            legacy_key = fingerprint({'sha256': file_hash(path), 'parameters': self.settings.parameters(),
-                                      'adapter': 'cloud-content-list-v1.1', 'api': self.settings.base_url})
-            legacy_folder = self.cache_dir / legacy_key
-            legacy_journal = legacy_folder / 'manifest.json'
-            if legacy_folder != folder and legacy_journal.exists():
+            # 按新到旧顺序查找可迁移缓存。v1.2 是本次升级前版本；v1.1 继续兼容更早产物。
+            # 这里只复制已校验的原始 ZIP 或恢复原任务 ID，不复用旧适配后的 documents.json。
+            legacy_key = legacy_folder = legacy_journal = None
+            for legacy_adapter in ('cloud-page-layout-v1.2', 'cloud-content-list-v1.1'):
+                candidate_key = fingerprint({'sha256': file_hash(path),
+                                             'parameters': self.settings.parameters(),
+                                             'adapter': legacy_adapter, 'api': self.settings.base_url})
+                candidate_folder = self.cache_dir / candidate_key
+                candidate_journal = candidate_folder / 'manifest.json'
+                if candidate_folder != folder and candidate_journal.exists():
+                    legacy_key, legacy_folder, legacy_journal = (
+                        candidate_key, candidate_folder, candidate_journal)
+                    break
+            if legacy_journal is not None:
                 legacy = read_json(legacy_journal)
                 archive_name = legacy.get('archive_name')
                 state.update(legacy)

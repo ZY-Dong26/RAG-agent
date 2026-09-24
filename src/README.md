@@ -6,7 +6,7 @@
 src/
 ├── rag_agent/                # 核心 RAG 业务
 │   ├── config.py             # 路径、切块、检索、重排与 LLM 配置
-│   ├── ingestion/            # PDF 解析、云端任务、缓存恢复与结果验收
+│   ├── ingestion/            # PDF 解析、缓存恢复、结果适配与本地规则后处理
 │   ├── indexing/             # 切块、向量化、BM25、产物复用与同代索引发布
 │   ├── qa/                   # 混合召回、RRF、BGE 重排、证据门控与回答生成
 │   └── common/               # JSON 保存、文件锁与进度提示

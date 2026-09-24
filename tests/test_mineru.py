@@ -245,6 +245,15 @@ class CloudTests(unittest.TestCase):
         self.assertEqual(len(self.calls), before)
         self.assertIn('migrated_from', read_json(self.journal()))
 
+    def test_v12_cache_migrates_to_current_adapter_without_network(self):
+        """本次升级前的 v1.2 原始 ZIP 可以本地迁移到当前适配版本。"""
+        with patch('rag_agent.ingestion.mineru_client.ADAPTER_VERSION', 'cloud-page-layout-v1.2'):
+            self.parser.parse(self.pdf)
+        before = len(self.calls)
+        docs, _ = self.parser.parse(self.pdf)
+        self.assertTrue(docs)
+        self.assertEqual(len(self.calls), before)
+        self.assertIn('migrated_from', read_json(self.journal()))
     def test_adapter_upgrade_resumes_original_task_data_id(self):
         """升级改变本地缓存键，但查询已提交任务必须沿用它原来的 data_id。"""
         self.fail_upload = True
@@ -335,7 +344,7 @@ class AdapterTests(unittest.TestCase):
             self.assertEqual(stats['page_source'], 'preproc_blocks')
 
     def test_empty_page_stats_and_unknown_schema(self):
-        """完整两页中只有一页有正文时应报告空文本页；遇到未知内容类型时应明确拒绝。"""
+        """完整两页中只有一页有正文时报告空页；未知类型保留给后处理审计。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); z = root/'a.zip'
             z.write_bytes(archive(blocks=[{'type':'text','page_idx':0,'text':'body'}]))
@@ -344,7 +353,9 @@ class AdapterTests(unittest.TestCase):
             self.assertEqual(stats['empty_text_pages'],[2])
             self.assertEqual(stats['text_pages'],1)
             (root/'out/doc/doc_content_list.json').write_text('[{"type":"new","page_idx":0}]')
-            with self.assertRaises(ValidationError): adapt_result(root/'out','test.pdf',2)
+            docs, _ = adapt_result(root/'out','test.pdf',2)
+            self.assertEqual(docs[0]['metadata']['block_type'], 'new')
+            self.assertEqual(docs[0]['metadata']['mineru_block']['type'], 'new')
 
     def test_lock_is_released_and_excludes_second_writer(self):
         """同一时间第二个写入者无法取得锁；第一个退出后可以再次取得，避免误认为永久占用。"""

@@ -24,6 +24,7 @@ from rag_agent.indexing.artifact_store import (
 )
 from rag_agent.ingestion.mineru_adapter import ADAPTER_VERSION
 from rag_agent.ingestion.mineru_client import MinerUCloud, parse_files
+from rag_agent.ingestion.postprocessor import POSTPROCESSOR_VERSION, postprocess_document
 from rag_agent.ingestion.mineru_settings import load_settings
 from rag_agent.common.files import atomic_json, exclusive_lock, read_json
 
@@ -76,8 +77,15 @@ def parse_documents(paths=None, resubmit=False):
     if failed:
         raise RuntimeError("以下文档解析失败：" + "、".join(failed)
                            + "；详情见 data/processed/parse_report.json")
-    documents = [document for path in paths for document in grouped.get(path.name, [])]
+    documents, audits = [], []
+    for path in paths:
+        refined, audit = postprocess_document(grouped.get(path.name, []), path.name)
+        documents.extend(refined)
+        audits.append({"source": path.name, **audit})
     atomic_json(config.PROCESSED_DIR / "documents.json", documents)
+    atomic_json(config.PROCESSED_DIR / "postprocess_report.json", {
+        "postprocessor_version": POSTPROCESSOR_VERSION, "documents": audits,
+    })
     return documents
 
 
@@ -100,6 +108,7 @@ def pipeline_signature(settings, embedding_id):
     return fingerprint({
         "mineru_parameters": settings.parameters(),
         "adapter_version": ADAPTER_VERSION,
+        "postprocessor_version": POSTPROCESSOR_VERSION,
         "splitter_version": SPLITTER_VERSION,
         "chunk_size": config.CHUNK_SIZE,
         "chunk_overlap": config.CHUNK_OVERLAP,
@@ -296,8 +305,10 @@ def build_index(force=False, strict=False, prune_missing=False):
         # 这里没有逐文档捕获向量计算/产物写入异常；这些异常会终止本次构建，旧索引不变。
         embedder = None
         for identity, item, documents, stats in pending:
+            refined_documents, postprocess_report = postprocess_document(documents, item["path"].name)
             notify(f"[切块] {item['path'].name}")
-            normalized_docs, chunks = _stable_chunks(documents, identity, item["sha256"], item["relative"])
+            normalized_docs, chunks = _stable_chunks(
+                refined_documents, identity, item["sha256"], item["relative"])
             if not chunks:
                 raise RuntimeError(f"{item['path'].name} 没有有效文本块，保留现有索引")
             key = artifact_key(identity, item["sha256"], pipeline_id,
@@ -317,8 +328,10 @@ def build_index(force=False, strict=False, prune_missing=False):
                     "document_id": identity, "source": item["path"].name,
                     "source_path": item["relative"], "source_sha256": item["sha256"],
                     "pipeline_signature": pipeline_id, "embedding_signature": embedding_id,
+                    "postprocessor_version": POSTPROCESSOR_VERSION,
+                    "postprocess_fail_open": postprocess_report["fail_open"],
                     "pages": stats.get("parsed_pages"), "created_at": time.time(),
-                })
+                }, postprocess_report=postprocess_report)
             records.append(_record_from_artifact(identity, item["path"].name, item["relative"],
                                                   item["sha256"], pipeline_id, artifact, stats))
 

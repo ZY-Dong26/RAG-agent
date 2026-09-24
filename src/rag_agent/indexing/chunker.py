@@ -66,6 +66,11 @@ class TextSplitter:
             # 取出当前内容块的元信息（文件名、页码）
             metadata = doc["metadata"]
 
+            # 后处理只标记页眉页脚等噪声，不物理删除原始块。切片阶段在这里统一跳过，
+            # 因而 refined_document.json 仍可审计，而向量库不会收录这些内容。
+            if metadata.get("excluded_from_retrieval"):
+                continue
+
             # 调用分割器，把当前块长文本切分成多个小段文本
             # MinerU 已区分内容类型：表格使用按行切块策略，其他内容继续使用递归字符切块。
             if metadata.get("block_type") == "table":
@@ -79,7 +84,8 @@ class TextSplitter:
                 chunk = {
                     "text": split_text,
                     "metadata": {
-                        **metadata,                 # 保留解析来源、页码和内容类型
+                        # mineru_block 只用于结构审计，可能包含完整 HTML/版面树，不复制进每个 chunk。
+                        **{key: value for key, value in metadata.items() if key != "mineru_block"},
                         "chunk_id": chunk_id         # 本次切分调用内的临时编号
                     }
                 }

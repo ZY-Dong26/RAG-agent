@@ -101,11 +101,17 @@ class PublicationTests(unittest.TestCase):
             key = "a" * 64
             documents = [{"text": "正文", "metadata": {"source": "a.pdf", "page": 1}}]
             chunks = self.chunks("正文")
+            postprocess_report = {"schema_version": 1, "postprocessor_version": "rules-v1",
+                                  "fail_open": False}
             saved = save_artifact(root, key, documents, chunks, [[1.0, 0.0]],
-                                  {"document_id": "doc", "pages": 1})
+                                  {"document_id": "doc", "pages": 1},
+                                  postprocess_report=postprocess_report)
             self.assertEqual(saved["chunks"], chunks)
             self.assertEqual(saved["vectors"].shape, (1, 2))
+            self.assertEqual(saved["postprocess_report"], postprocess_report)
             artifact_dir = root / "document_artifacts" / key
+            self.assertEqual(read_json(artifact_dir / "refined_document.json"), documents)
+            self.assertEqual(read_json(artifact_dir / "postprocess_report.json"), postprocess_report)
             (artifact_dir / "chunks.json").write_text("[]", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "校验失败"):
                 load_artifact(root, key)

@@ -17,7 +17,7 @@ from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 
 # 更改解析字段映射或页码规则时应更新此版本，让旧的转换结果不会被当成新格式缓存。
-ADAPTER_VERSION = 'cloud-page-layout-v1.2'
+ADAPTER_VERSION = 'cloud-page-layout-v1.3'
 
 
 class ValidationError(ValueError):
@@ -137,31 +137,45 @@ def page_local_blocks(pages):
                 parts.append(value)
         return '\n'.join(parts)
 
+    def page_height(page):
+        """尽量取得页面高度供后处理判断 bbox；字段不稳定时返回 None，由后处理回退到块顺序。"""
+        for key in ('page_height', 'height'):
+            if isinstance(page.get(key), (int, float)) and page[key] > 0:
+                return page[key]
+        size = page.get('page_size')
+        if isinstance(size, (list, tuple)) and len(size) >= 2 and isinstance(size[1], (int, float)):
+            return size[1]
+        return None
+
     normalized = []
     for page in pages:
-        # 正文以原始页内块为准；只从丢弃块中补回有知识内容的脚注。
+        # 正文以原始页内块为准；从丢弃块补回脚注以及页眉页脚候选。后者不在适配器删除，
+        # 而是交给独立后处理基于全文重复证据标记，避免两页短文档被无条件误删。
         raw = page['preproc_blocks']
         if not isinstance(raw, list):
             raise ValidationError('逐页内容块必须为列表')
-        raw = raw + [b for b in page.get('discarded_blocks', []) if b.get('type') == 'page_footnote']
+        raw = raw + [b for b in page.get('discarded_blocks', [])
+                     if b.get('type') in ('page_footnote', 'header', 'footer', 'page_number')]
         for block in raw:
             kind = block.get('type', 'unknown')
-            item = {'page_idx': page['page_idx'], 'type': kind, 'bbox': block.get('bbox')}
-            if kind in ('text', 'title', 'ref_text', 'page_footnote', 'list', 'code', 'interline_equation', 'equation'):
-                item['type'] = 'text' if kind == 'title' else 'equation' if kind == 'interline_equation' else kind
+            item = {'page_idx': page['page_idx'], 'type': kind, 'bbox': block.get('bbox'),
+                    'page_height': page_height(page), 'mineru_block': block}
+            if kind in ('text', 'title', 'ref_text', 'page_footnote', 'list', 'code',
+                        'interline_equation', 'equation', 'header', 'footer', 'page_number'):
+                item['type'] = 'equation' if kind == 'interline_equation' else kind
                 item['text'] = spans_text(block)
                 if kind == 'title':
-                    item['text_level'] = block.get('text_level', 1)
+                    item['text_level'] = block.get('text_level')
             elif kind == 'table':
                 item['table_body'] = spans_text(block, html=True)
                 item['table_caption'] = [spans_text(b) for b in block.get('blocks', []) if b.get('type') == 'table_caption']
                 item['table_footnote'] = [spans_text(b) for b in block.get('blocks', []) if b.get('type') == 'table_footnote']
             elif kind in ('image', 'chart'):
                 item['content'] = spans_text(block)
-            elif kind in ('header', 'footer', 'page_number', 'discarded'):
-                continue
             else:
-                raise ValidationError(f'不支持的逐页内容块类型：{kind!r}')
+                # 未知结构不静默丢弃：保留原始块并提取已有文字。后处理记录类型告警；
+                # 没有文字的未知结构仍留在文档产物中，但不会生成检索 chunk。
+                item['text'] = spans_text(block)
             normalized.append(item)
     return normalized
 
@@ -213,7 +227,8 @@ def adapt_result(folder, source, expected_pages):
         # 正文、公式、代码和列表统一为字符串；同一页可以生成多个独立文档块。
         # 云端 v1 还会返回页脚注释和参考文献正文；它们含有效文字，不能当作未知类型丢弃。
         # page_footnote 是脚注内容，与仅用于排版的 footer（页脚）不同。
-        if kind in ('text', 'equation', 'code', 'list', 'page_footnote', 'ref_text'):
+        if kind in ('text', 'title', 'equation', 'code', 'list', 'page_footnote', 'ref_text',
+                    'header', 'footer', 'page_number'):
             value = text_value(block.get('text') or block.get('list_items'))
         # 表格由标题、主体和脚注组成。HTML 主体先转行文本，避免把标签本身当成知识正文。
         elif kind == 'table':
@@ -227,17 +242,19 @@ def adapt_result(folder, source, expected_pages):
             value = '\n'.join(filter(None, [text_value(block.get(kind + '_caption')),
                                            text_value(block.get(kind + '_footnote')),
                                            text_value(block.get('content'))]))
-        # 页眉、页脚、页码通常重复且与问题无关，跳过以减少检索噪声。
-        elif kind in ('header', 'footer', 'page_number', 'discarded'):
-            continue
         else:
-            raise ValidationError(f'不支持的内容块类型：{kind!r}')
-        if not value.strip(): continue
-        text_pages.add(page)
+            # 透传未知类型及原始字段，不因云端新增类型丢失数据。V1 后处理会记录告警；
+            # 空未知块仍保留在结构化产物中，但不会产生检索文本。
+            raw_value = block.get('text', block.get('content', ''))
+            value = raw_value if isinstance(raw_value, str) else ''
+        if value.strip():
+            text_pages.add(page)
         # 4. 统一输出协议：text 给切块器，metadata 沿切块→索引→检索传递，最终用于引用。
         docs.append({'text': value.strip(), 'metadata': {
             'source': source, 'page': page + 1, 'block_id': f'p{page + 1}_b{index}',
-            'block_type': kind, 'parser': 'mineru_cloud', 'adapter_version': ADAPTER_VERSION}})
+            'block_type': kind, 'bbox': block.get('bbox'), 'page_height': block.get('page_height'),
+            'title_level': block.get('text_level'), 'mineru_block': block.get('mineru_block', block),
+            'parser': 'mineru_cloud', 'adapter_version': ADAPTER_VERSION}})
     # 5. 覆盖完整不代表每页都有文字；明确记录空文本页，供人工确认是空白页还是识别遗漏。
     # body_blocks/table_blocks 按云端块类型计数，characters 按实际保留文字计数。
     stats = {'expected_pages': expected_pages, 'parsed_pages': len(page_ids),
