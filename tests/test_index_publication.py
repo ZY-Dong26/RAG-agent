@@ -242,7 +242,8 @@ class IncrementalBuildTests(unittest.TestCase):
                 with patch.object(builder, "collect_parse_results", return_value=failed):
                     builder.build_index()
                 stale = faiss_store.VectorStore(root / "db").load()
-                self.assertEqual(stale.chunks[0]["text"], "旧正文")
+                self.assertTrue(stale.chunks[0]["text"].startswith("章节："))
+                self.assertTrue(stale.chunks[0]["text"].endswith("旧正文"))
                 self.assertEqual(read_json(root / "processed" / "build_report.json")["stale_documents"], 1)
 
                 success = ({"report.pdf": [self.document("report.pdf", "新正文")]},
@@ -250,7 +251,8 @@ class IncrementalBuildTests(unittest.TestCase):
                 with patch.object(builder, "collect_parse_results", return_value=success):
                     builder.build_index()
                 current = faiss_store.VectorStore(root / "db").load()
-                self.assertEqual(current.chunks[0]["text"], "新正文")
+                self.assertTrue(current.chunks[0]["text"].startswith("章节："))
+                self.assertTrue(current.chunks[0]["text"].endswith("新正文"))
                 self.assertEqual(len(calls), 2)
 
 

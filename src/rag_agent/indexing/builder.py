@@ -29,7 +29,7 @@ from rag_agent.ingestion.mineru_settings import load_settings
 from rag_agent.common.files import atomic_json, exclusive_lock, read_json
 
 
-SPLITTER_VERSION = 3  # v3 表示切块元数据加入稳定的文档 ID 和内容型 chunk ID。
+SPLITTER_VERSION = 4  # v4 启用章节感知切块、原子块保护和切块审计。
 MANIFEST_VERSION = 3  # v3 表示每代索引同时包含已校验的 FAISS 与 BM25。
 
 
@@ -110,6 +110,7 @@ def pipeline_signature(settings, embedding_id):
         "adapter_version": ADAPTER_VERSION,
         "postprocessor_version": POSTPROCESSOR_VERSION,
         "splitter_version": SPLITTER_VERSION,
+        "chunking_rules": chunker.chunking_signature(),
         "chunk_size": config.CHUNK_SIZE,
         "chunk_overlap": config.CHUNK_OVERLAP,
         "embedding_signature": embedding_id,
@@ -150,7 +151,7 @@ def _stable_chunks(documents, document_id, source_sha256, source_path):
     """
     给一份文档切块并补充稳定元数据。
 
-    TextSplitter 仍负责正文/表格的实际边界；这里把其局部编号转换为内容型哈希。因为每份文档
+    TextSplitter 负责章节组合、原子块保护和实际边界；这里把其局部编号转换为内容型哈希。因为每份文档
     单独调用切分器，其他 PDF 的增删不会改变本文件 chunk 标识。
     """
     enriched = []
@@ -159,14 +160,16 @@ def _stable_chunks(documents, document_id, source_sha256, source_path):
             **document["metadata"], "document_id": document_id,
             "document_sha256": source_sha256, "source_path": source_path,
         }})
-    chunks = chunker.TextSplitter(config.CHUNK_SIZE, config.CHUNK_OVERLAP).split_documents(enriched)
+    splitter = chunker.TextSplitter(config.CHUNK_SIZE, config.CHUNK_OVERLAP,
+                                     section_aware=chunker.SECTION_AWARE_CHUNKING)
+    chunks = splitter.split_documents(enriched)
     for local_index, chunk in enumerate(chunks):
         meta = chunk["metadata"]
         meta["segment_index"] = local_index
         meta["chunk_id"] = fingerprint({"document_id": document_id,
                                          "block_id": meta.get("block_id"),
                                          "segment_index": local_index, "text": chunk["text"]})
-    return enriched, chunks
+    return enriched, chunks, splitter.last_report
 
 
 def _valid_old_record(record, source_sha256, pipeline_id):
@@ -307,10 +310,15 @@ def build_index(force=False, strict=False, prune_missing=False):
         for identity, item, documents, stats in pending:
             refined_documents, postprocess_report = postprocess_document(documents, item["path"].name)
             notify(f"[切块] {item['path'].name}")
-            normalized_docs, chunks = _stable_chunks(
+            normalized_docs, chunks, chunking_report = _stable_chunks(
                 refined_documents, identity, item["sha256"], item["relative"])
             if not chunks:
                 raise RuntimeError(f"{item['path'].name} 没有有效文本块，保留现有索引")
+            lengths = chunking_report["lengths"]
+            notify(f"[切块] 完成 {len(chunks)} 个：字符 min/p50/p95/max="
+                   f"{lengths['min']}/{lengths['p50']}/{lengths['p95']}/{lengths['max']}，"
+                   f"短块 {chunking_report['below_minimum']}，超硬上限 "
+                   f"{chunking_report['above_hard_maximum']}")
             key = artifact_key(identity, item["sha256"], pipeline_id,
                                nonce=uuid.uuid4().hex if force else None)
             try:
@@ -330,6 +338,8 @@ def build_index(force=False, strict=False, prune_missing=False):
                     "pipeline_signature": pipeline_id, "embedding_signature": embedding_id,
                     "postprocessor_version": POSTPROCESSOR_VERSION,
                     "postprocess_fail_open": postprocess_report["fail_open"],
+                    "chunker_version": chunker.CHUNKER_VERSION,
+                    "chunking_report": chunking_report,
                     "pages": stats.get("parsed_pages"), "created_at": time.time(),
                 }, postprocess_report=postprocess_report)
             records.append(_record_from_artifact(identity, item["path"].name, item["relative"],

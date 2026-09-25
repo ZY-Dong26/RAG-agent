@@ -38,8 +38,8 @@ CHUNKS_FILE = PROCESSED_DIR / "chunks.json"        # 切分结果文件
 VECTOR_DB_DIR = BASE_DIR / "data" / "vector_db"             # 向量库持久化目录（FAISS索引+chunk元信息）
 
 # ========== 文本切分参数 ==========
-CHUNK_SIZE = 800        # 每个文本块最大字符数
-CHUNK_OVERLAP = 150     # 相邻文本块重叠字符数（保留上下文）
+CHUNK_SIZE = 800        # 旧逐块回退策略的字符上限；章节策略参数集中在 indexing/chunker.py
+CHUNK_OVERLAP = 150     # 旧逐块策略的重叠字符数；章节策略用结构装箱，不复制重叠正文
 
 # ========== 检索参数 ==========
 # 两路召回的原始分数不在同一量纲，先各自取候选，再用排名倒数 RRF 融合。

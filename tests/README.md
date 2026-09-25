@@ -6,6 +6,7 @@
 tests/
 ├── test_mineru.py            # 模拟云端任务、缓存恢复、鉴权与解析验收
 ├── test_postprocessor.py     # 页眉页脚、跨页段落、标题路径、审计与 fail-open
+├── test_section_chunker.py   # 章节组合、公式/表格保护、元数据、回退与完整性
 ├── test_index_publication.py # 向量产物复用、部分成功与索引发布保护
 ├── test_bm25_store.py       # 中文分词、BM25 持久化与损坏检测
 ├── test_hybrid_retrieval.py # RRF 去重、单路候选与假 BGE 重排

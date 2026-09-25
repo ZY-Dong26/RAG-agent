@@ -33,6 +33,8 @@ NON_PARAGRAPH_TYPES = PROTECTED_TEXT_TYPES | {
     "title", "caption", "list", "page_footnote", "footnote", "ref_text", "reference",
     "header", "footer", "page_number", "discarded",
 }
+ATOMIC_BLOCK_TYPES = {"table", "formula", "equation", "interline_equation"}
+
 PRESERVED_COUNT_TYPES = {
     "table", "formula", "equation", "interline_equation", "page_footnote", "footnote",
     "ref_text", "reference",
@@ -136,6 +138,9 @@ def _prepare_blocks(raw_document, report):
             "page_end": metadata.get("page_end", page),
             "title_level": metadata.get("title_level", metadata.get("text_level")),
             "section_path": list(metadata.get("section_path") or []),
+            # 独立公式和表格是原子块；行内公式仍属于普通 text，不会被误标。
+            "atomic": (metadata.get("atomic") if isinstance(metadata.get("atomic"), bool)
+                       else block_type in ATOMIC_BLOCK_TYPES),
             "excluded_from_retrieval": bool(metadata.get("excluded_from_retrieval", False)),
             "excluded_reason": metadata.get("excluded_reason"),
             "postprocess_operations": list(metadata.get("postprocess_operations") or []),
