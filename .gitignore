@@ -43,15 +43,15 @@ coverage.xml
 .ipynb_checkpoints/
 
 # 本地模型权重：体积较大，在每台机器上单独准备
-/model/
+/backend/model/
 
 # 原始文档、解析结果与向量索引保留在本地；保留 .gitkeep 以跟踪目录结构
-/data/raw/*
-!/data/raw/.gitkeep
-/data/processed/*
-!/data/processed/.gitkeep
-/data/vector_db/*
-!/data/vector_db/.gitkeep
+/backend/data/raw/*
+!/backend/data/raw/.gitkeep
+/backend/data/processed/*
+!/backend/data/processed/.gitkeep
+/backend/data/vector_db/*
+!/backend/data/vector_db/.gitkeep
 
 # 运行日志与操作系统生成的辅助文件
 *.log
@@ -60,12 +60,19 @@ Thumbs.db
 Desktop.ini
 
 # 评测集定义与评测/调试输出仅保留本地；保留各层 .gitkeep 以跟踪目录结构
-/data/evaluation/*
-!/data/evaluation/.gitkeep
-/data/outputs/*
-!/data/outputs/*/
-/data/outputs/*/*
-!/data/outputs/*/.gitkeep
+/backend/data/evaluation/*
+!/backend/data/evaluation/.gitkeep
+!/backend/data/evaluation/testdata.json
+!/backend/data/evaluation/testdata_sources.json
+/backend/data/outputs/*
+!/backend/data/outputs/.gitkeep
+!/backend/data/outputs/*/
+/backend/data/outputs/*/*
+!/backend/data/outputs/*/.gitkeep
 
 # 本地项目开发约定，不纳入 Git
 /AGENTS.md
+
+# Vite 本地依赖与构建产物
+/frontend/node_modules/
+/frontend/dist/

@@ -11,7 +11,7 @@ scripts/
 └── debug_chat.py        # 交互问答，导出检索/提示词诊断报告
 ```
 
-所有命令在项目根目录的 PowerShell 中执行，用项目自己的解释器，无需激活虚拟环境。首次使用顺序：**建库 → 问答 → 按需调试或评测**（单独解析是可选步骤，建库已包含）。各脚本都支持 `--help` 查看完整参数。
+所有命令在 `backend/` 目录的 PowerShell 中执行，用项目自己的解释器，无需激活虚拟环境。首次使用顺序：**建库 → 问答 → 按需调试或评测**（单独解析是可选步骤，建库已包含）。各脚本都支持 `--help` 查看完整参数。
 
 ## 1. 建库：build_index.py
 
@@ -124,5 +124,5 @@ MinerU 原始 ZIP、解压目录和适配缓存保存在 `data/processed/mineru/
 
 ## PyCharm 运行配置
 
-- 解释器：`.venv\Scripts\python.exe`；工作目录：项目根目录。
+- 在 PyCharm 中选择“现有虚拟环境”，解释器指向 `backend/.venv/Scripts/python.exe`；工作目录设为 `backend/`。该环境已经创建，无需再选“新建环境”。
 - Script path 选要运行的脚本；Parameters 栏只填脚本参数（如 `--limit 3 --output "..."`），普通建库/问答可留空。

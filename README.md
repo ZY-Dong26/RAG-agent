@@ -30,35 +30,38 @@ MinerU 在解析时接收完整 PDF；日常问答复用本地索引，只向回
 
 ```text
 RAG-agent/
-├── scripts/           # 七个运行入口
-├── src/               # 核心 RAG 与评测、调试实现
-├── data/              # 原始资料、解析缓存、向量库、评测输入和输出
-├── tests/             # 离线自动化测试
-├── model/             # 本地 Embedding 与 BGE 重排模型
-├── frontend/          # 未来前端预留，目前没有可运行界面
-├── .env.example       # 环境配置模板及参数注释
-├── requirements.txt   # Python 依赖
+├── backend/           # Python 逻辑、入口、测试、数据和模型
+│   ├── scripts/
+│   ├── src/
+│   ├── tests/
+│   ├── data/
+│   ├── model/
+│   ├── .env.example
+│   └── requirements.txt
+├── frontend/          # 独立 JavaScript/Vite 项目
 └── README.md          # 本文件
 ```
 
-各目录细节集中在对应文档，根目录只保留首次运行所需内容：
+各目录细节集中在对应文档；Python 运行目录是 `backend/`：
 
 | 想了解什么 | 去哪里查看 |
 |---|---|
-| 每个入口做什么、所有命令参数、PyCharm 怎么运行 | [scripts/README.md](scripts/README.md) |
-| 各源码模块的职责与学习顺序 | [src/README.md](src/README.md) |
-| 数据目录结构、缓存和输出的保留规则 | [data/README.md](data/README.md) |
-| 离线测试范围与运行命令 | [tests/README.md](tests/README.md) |
-| 后续前端的设计边界 | [frontend/README.md](frontend/README.md) |
+| 每个入口做什么、所有命令参数、PyCharm 怎么运行 | [scripts/README.md](backend/scripts/README.md) |
+| 各源码模块的职责与学习顺序 | [src/README.md](backend/src/README.md) |
+| 数据目录结构、缓存和输出的保留规则 | [data/README.md](backend/data/README.md) |
+| 离线测试范围与运行命令 | [tests/README.md](backend/tests/README.md) |
+| 前端目录与启动方法 | [frontend/README.md](frontend/README.md) |
 
 ## 首次准备
 
+以下 Python 命令均在 `backend/` 目录执行；路径如 `data/raw/` 也相对于该目录。
+
 ### 1. 安装依赖
 
-当前开发环境为 Windows、Python 3.12。在项目根目录的 PowerShell 终端执行：
+当前开发环境为 Windows、Python 3.12。在 `backend/` 目录的 PowerShell 终端执行：
 
 ```powershell
-# 已有 .venv 时跳过第一条
+# 在 backend/ 目录执行；已有 backend/.venv 时跳过第一条
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
@@ -74,7 +77,7 @@ py -3.12 -m venv .venv
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-打开项目根目录 `.env`，主要填写：
+打开 `backend/.env`，主要填写：
 
 - `MINERU_API_KEY`：云端 PDF 解析密钥。
 - `LLM_API_KEY`：回答模型密钥，同时核对 `LLM_BASE_URL` 和 `LLM_MODEL`。
@@ -82,8 +85,8 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 - `EMBEDDING_MODEL`：本地向量模型目录，默认 `model/Qwen3-Embedding-0.6B`。
 - `RERANKER_MODEL`：本地重排模型目录，默认 `model/bge-reranker-v2-m3`。
 
-其他参数的含义见 [.env.example](.env.example)，不在这里重复配置清单。
-两个服务使用不同的密钥变量；系统中的同名环境变量优先。真实 `.env` 被 Git 忽略。
+其他参数的含义见 [.env.example](backend/.env.example)，不在这里重复配置清单。
+两个服务使用不同的密钥变量；系统中的同名环境变量优先。真实 `backend/.env` 被 Git 忽略。
 
 ### 3. 准备 PDF 和本地模型
 
@@ -91,7 +94,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 将完整的 Sentence Transformers 模型放入 `model/Qwen3-Embedding-0.6B/`，包括权重、分词器、`modules.json` 和池化配置。
 另行把 `BAAI/bge-reranker-v2-m3` 的完整 Transformers 模型目录放到
 `model/bge-reranker-v2-m3/`。程序使用 `local_files_only=True`，不会自动下载模型。
-模型相对路径基于项目根目录，也支持配置绝对路径。只运行 PDF 解析时不需要本地模型或 LLM 密钥。
+模型相对路径基于 `backend/`，也支持配置绝对路径。只运行 PDF 解析时不需要本地模型或 LLM 密钥。
 
 临时没有重排模型时可在 `.env` 设置 `RERANK_ENABLED=false`。此时系统按 RRF 排名取前 5 条，
 且只能在拒答阈值为 `None` 时运行；该模式用于临时排障，不代表正式效果。
@@ -101,7 +104,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 准备完成后，先建库，再聊天。不必提前单独运行解析，建库已包含该步骤。
 
 ```powershell
-# 按需解析 PDF、切块和计算向量，发布知识库
+# 在 backend/ 目录执行：按需解析 PDF、切块和计算向量，发布知识库
 .\.venv\Scripts\python.exe scripts/build_index.py
 
 # 加载知识库，输入问题并调用回答模型
@@ -115,7 +118,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 的解析缓存和向量产物，只在本地补建 BM25 和发布新索引，不会因此重新上传成功缓存的 PDF；
 原本就失败或发生变化的文档仍按正常增量规则处理。
 
-批量评测、模型判分、调试报告等操作，统一查阅 [scripts/README.md](scripts/README.md)。
+批量评测、模型判分、调试报告等操作，统一查阅 [scripts/README.md](backend/scripts/README.md)。
 
 ## 需要了解的运行规则
 
@@ -125,9 +128,9 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 - **混合召回**：Dense 与 BM25 各取 30 条，按稳定 `chunk_id` 去重后使用等权 RRF 融合为 20 条，再由 BGE 重排取前 5 条。BM25 使用 `jieba.lcut_for_search()`，同时保留英文缩写、型号、版本号、年份和百分比。
 - **RRF 原因**：余弦相似度与 BM25 分数不在同一量纲，不能直接相加；RRF 只组合各路排名，默认公式为 `weight / (60 + rank)`。
 - **拒答阈值**：默认 `RERANK_REJECT_THRESHOLD=None`，表示尚未校准，不会凭经验硬拒答。应使用项目评测集统计可回答/不可回答问题的 Top-1 `rerank_score` 分布后再设置阈值；sigmoid 分数只是单调映射，不是真实概率。
-- **索引保护**：每代同时保存并回读验证 FAISS、BM25 和 chunk ID 顺序，全部通过后才切换活动版本；历史索引和解析缓存不会自动删除。正式索引在 `data/vector_db/`，数据保留规则见 [数据目录说明](data/README.md)。
-- **评测与判分**：结果写入 `data/outputs/`。跑评测、纯本地导出、裁判判分三个入口相互独立；已有批次可再用独立裁判模型按正确性、完整性和相关性判分，详见 [运行入口说明](scripts/README.md) 第 4–6 节。
+- **索引保护**：每代同时保存并回读验证 FAISS、BM25 和 chunk ID 顺序，全部通过后才切换活动版本；历史索引和解析缓存不会自动删除。正式索引在 `data/vector_db/`，数据保留规则见 [数据目录说明](backend/data/README.md)。
+- **评测与判分**：结果写入 `data/outputs/`。跑评测、纯本地导出、裁判判分三个入口相互独立；已有批次可再用独立裁判模型按正确性、完整性和相关性判分，详见 [运行入口说明](backend/scripts/README.md) 第 4–6 节。
 - **当前边界**：聊天各轮独立检索，没有多轮历史；检索指标不等于答案正确率。离线测试验证程序行为，真实解析质量与回答效果仍需人工验收。
 
 遇到解析或建库失败，先看终端阶段提示及 `data/processed/` 下的报告。
-需要重新提交云端解析时，按 [运行入口说明](scripts/README.md) 中的 `--resubmit` 操作；重新提交可能消耗额外额度。
+需要重新提交云端解析时，按 [运行入口说明](backend/scripts/README.md) 中的 `--resubmit` 操作；重新提交可能消耗额外额度。

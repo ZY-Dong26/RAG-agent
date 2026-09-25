@@ -21,7 +21,7 @@ tests/
 
 ## 运行方法
 
-在项目根目录执行：
+在 `backend/` 目录执行：
 
 ```powershell
 .\.venv\Scripts\python.exe -B -m unittest discover -s tests -v

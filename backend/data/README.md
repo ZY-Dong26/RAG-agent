@@ -14,7 +14,7 @@ data/
     └── debug/               # 调试 JSON 和 HTML 报告
 ```
 
-- 核心源码位于 `src/rag_agent/`，日常入口位于 `scripts/`；所有运行入口位于 `scripts/`，辅助实现位于 `src/devtools/`。
+- 以下相对路径均以 `backend/` 为基准。核心源码位于 `src/rag_agent/`，日常入口位于 `scripts/`；所有运行入口位于 `scripts/`，辅助实现位于 `src/devtools/`。
 - 评测输入不会参与知识库构建；不要将参考答案放到 `raw/`。
 - `processed/mineru/` 用于避免重复上传；删除后可能需要再次使用云端解析。
 - 删除 `vector_db/` 后需要重新建库。当前只是移动目录，既有索引保持不变。
@@ -23,3 +23,9 @@ data/
 - 评测集、映射和本说明可纳入 Git；原始 PDF、解析缓存、索引与工具输出继续忽略。
 - 旧评测批次迁移时核验了索引与元数据内容；`run.before-data-move.json` 保留原清单，
   `path-migration.json` 记录此次纯路径迁移。实际模型、索引或代码变更仍受恢复校验保护。
+
+## backend 目录迁移
+
+数据、模型和配置随 Python 工程移入 `backend/`。索引文件与原始资料未重新生成；默认模型的建库签名保留迁移前的逻辑标识，以继续复用现有向量。
+
+已有评测批次的 `run.json` 仅更新了模型绝对路径，并在各批次保留 `run.before-backend-move.json`。最新批次的源码快照同步记录了这次建库签名路径兼容修改；更早批次原本已有其他源码差异，仍按原有规则拒绝混跑。每代索引清单的 `embedding_model` 展示路径同步更新，并保留 `build_manifest.before-backend-move.json`。

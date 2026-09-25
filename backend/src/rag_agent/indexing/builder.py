@@ -93,13 +93,19 @@ def embedding_signature():
     """
     计算影响向量结果的本地模型签名。
 
-    不逐字节哈希大模型权重，使用相对路径、大小和修改时间识别本地模型变化；这与原建库逻辑
-    保持一致。最大输入长度也参与签名，避免不同截断设置生成的向量被混用。
+    不逐字节哈希大模型权重，使用模型标识、文件相对路径、大小和修改时间识别变化。
+    默认模型的标识兼容 backend 迁移前的路径，避免纯目录移动使已有向量失效；
+    最大输入长度也参与签名，避免不同截断设置生成的向量被混用。
     """
     model_dir = Path(config.EMBEDDING_MODEL)
     files = sorted((str(path.relative_to(model_dir)), path.stat().st_size, path.stat().st_mtime_ns)
                    for path in model_dir.rglob("*") if path.is_file()) if model_dir.is_dir() else []
-    return fingerprint({"model": str(model_dir), "files": files,
+    # 模型随 Python 工程从根目录移入 backend/model，权重与文件时间未变化。
+    # 对默认模型保留迁移前的签名标识，使现有逐文档向量可以继续复用；
+    # 模型实际加载路径仍是 backend/model，自定义外部路径仍按真实路径参与签名。
+    model_id = (str(config.BASE_DIR.parent / "model" / model_dir.name)
+                if model_dir.parent == config.BASE_DIR / "model" else str(model_dir))
+    return fingerprint({"model": model_id, "files": files,
                         "max_length": config.EMBEDDING_MAX_LENGTH, "normalized": True})
 
 
