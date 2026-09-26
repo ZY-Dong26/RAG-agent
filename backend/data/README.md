@@ -17,7 +17,7 @@ data/
 - 以下相对路径均以 `backend/` 为基准。核心源码位于 `src/rag_agent/`，日常入口位于 `scripts/`；所有运行入口位于 `scripts/`，辅助实现位于 `src/devtools/`。
 - 评测输入不会参与知识库构建；不要将参考答案放到 `raw/`。
 - `processed/mineru/` 用于避免重复上传；删除后可能需要再次使用云端解析。
-- 删除 `vector_db/` 后需要重新建库。当前只是移动目录，既有索引保持不变。
+- 删除 `vector_db/` 后需要重新建库；目录迁移时保留的既有索引仍在这里。
 - `vector_db/document_artifacts/<artifact_key>/manifest.json` 的 `chunking_report` 是每份文档的切块审计统计；`chunks.json` 可核对章节前缀、页码和来源块 ID。
 - `outputs/` 不是运行知识库的必要输入，但删除评测结果会丢失断点恢复与效果对比依据。
 - 评测集、映射和本说明可纳入 Git；原始 PDF、解析缓存、索引与工具输出继续忽略。

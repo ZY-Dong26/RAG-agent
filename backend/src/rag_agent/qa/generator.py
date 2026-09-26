@@ -1,7 +1,7 @@
 # generator.py —— 生成层：检索到的chunk上下文 + 用户问题 → 云端LLM → 答案
 # 关键设计：
 #   1. LLM走OpenAI兼容协议：云端大模型（DeepSeek/通义/Kimi/OpenAI等）基本都支持，
-#      切换服务时在根目录 .env 配置兼容服务的 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 三件套
+#      切换服务时在 backend/.env 配置 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 三件套
 #   2. client可注入（依赖注入）：测试时传假client，不真的调云端；平时自动按config创建
 #   3. prompt = 系统约束(只依据资料回答) + 编号资料 + 问题，句末用[编号]标注引用
 #   4. 资料拼接使用字符预算 MAX_CONTEXT_CHARS；它不是完整请求的 Token 计数
@@ -36,10 +36,11 @@ class Generator:
         else:
             self._check_config()
             # 延迟导入：只有真正要调LLM时才依赖openai库
-            from openai import OpenAI
+            from openai import DefaultHttpxClient, OpenAI
             self.client = OpenAI(
                 api_key=config.LLM_API_KEY,
                 base_url=config.LLM_BASE_URL,
+                http_client=DefaultHttpxClient(trust_env=config.LLM_TRUST_ENV),
             )
 
     @staticmethod
@@ -47,7 +48,7 @@ class Generator:
         """校验云端LLM配置是否齐全，缺key时给出明确的补齐指引"""
         if not config.LLM_API_KEY:
             raise RuntimeError(
-                "未配置云端大模型API Key。请在项目根目录 .env 文件中添加：\n"
+                "未配置云端大模型API Key。请在 backend/.env 文件中添加：\n"
                 f"  LLM_API_KEY=你的key\n"
                 f"  LLM_BASE_URL={config.LLM_BASE_URL}\n"
                 f"  LLM_MODEL={config.LLM_MODEL}\n"

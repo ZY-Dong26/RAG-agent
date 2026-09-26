@@ -16,7 +16,7 @@ import argparse
 import sys
 from pathlib import Path
 
-# 直接运行 scripts 下的文件时，先把项目根目录下的 src 加入模块搜索路径。
+# 直接运行 backend/scripts 下的文件时，先把 backend/src 加入模块搜索路径。
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from rag_agent.common.progress import configure_progress, report, stage

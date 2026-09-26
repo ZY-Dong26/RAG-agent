@@ -5,6 +5,7 @@ scripts/
 ├── parse_documents.py   # MinerU 解析 + 本地规则后处理，不建向量库
 ├── build_index.py       # 增量建库：解析 + 切块 + FAISS/BM25 原子发布
 ├── chat.py              # 用当前索引做命令行问答
+├── serve_api.py         # 启动本机 FastAPI 问答服务
 ├── evaluate.py          # 批量回答评测集并统计检索指标（不调用裁判模型）
 ├── export_results.py    # 从已有 items 纯本地重新导出全部汇总产物
 ├── judge.py             # 用独立裁判模型给已有评测批次自动判分
@@ -41,6 +42,16 @@ scripts/
 无参数。启动时先加载并预热 BGE 重排模型，显示“已就绪”后再输入问题。逐题执行 Dense/BM25 → RRF → BGE 重排 → 证据门控 → 云端生成；
 拒答时不会调用回答模型。输入 `exit`/`quit`/`q`/`退出` 或 Ctrl+C 结束。
 重新建库后需重启本入口才会加载新索引。
+
+### 本机 Web API：serve_api.py
+
+```powershell
+.\.venv\Scripts\python.exe scripts/serve_api.py
+```
+
+服务监听 `http://127.0.0.1:8000`，启动时一次性加载索引、Embedding 并预热 BGE；成功后可访问 `/docs` 查看接口。`GET /api/v1/status` 只读返回就绪状态、向量数量和重排设备；`POST /api/v1/ask` 接收 `{"question":"你的问题"}`，返回答案、引用、证据门控状态与召回/重排/生成耗时。提问会调用已配置的云端回答模型；状态查询不会。当前单进程一次处理一条问答，忙碌时返回 HTTP 429；请勿用多个 worker 重复加载 GPU 模型。Vue 前端通过 Vite 的 `/api` 代理调用此接口；前端启动方法见根目录 README。
+
+若日志显示 `APIConnectionError`，且检索与重排已完成，先检查云端模型连接。Windows 系统代理不可用时，可在 `backend/.env` 设置 `LLM_TRUST_ENV=false` 让回答模型直连；修改后重启 API。
 
 ## 3. PDF 解析：parse_documents.py
 

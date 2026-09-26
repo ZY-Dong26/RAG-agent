@@ -1,4 +1,4 @@
-﻿# 直接依赖固定为当前本地环境使用的版本（Python 3.12）。
+# 直接依赖固定为当前本地环境使用的版本（Python 3.12）。
 # PyPI 安装通常得到 CPU 版；Windows CUDA 12.8 的 GPU 替换命令见根目录 README。
 # 读取 PDF 基本信息和文字层；云端解析前也用它核对原文件页数。
 pypdf==6.18.1
@@ -25,3 +25,6 @@ openai==3.14.1
 python-dotenv==1.2.3
 # HTTP 客户端，用于 MinerU 任务创建、查询以及文件上传和下载。
 httpx==0.28.1
+# 本机问答 API 与 ASGI 启动服务；不会替代现有命令行入口。
+fastapi==0.141.1
+uvicorn==0.54.0

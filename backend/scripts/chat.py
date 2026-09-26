@@ -4,12 +4,12 @@ chat.py —— 命令行问答入口（常驻 REPL）
 职责：启动时加载混合索引和本地模型（整个会话只做一次），然后循环接收用户问题：
      Dense + BM25 → RRF → BGE 重排 → 证据门控 → 云端 LLM → 展示最终引用。
 ·
-运行（在项目根目录）：
-     python scripts/chat.py
+运行（在 backend/ 目录）：
+     python scripts/chat.py（应使用 backend/.venv 的解释器）
 
 退出：输入 exit / quit / q / 退出，或按 Ctrl+C
-前置：先跑过 python scripts/build_index.py 建库；
-     在项目根目录 .env 里配好 LLM_API_KEY（否则启动时会给提示）。
+前置：先运行 scripts/build_index.py 建库；
+     在 backend/.env 里配好 LLM_API_KEY（否则启动时会给提示）。
 """
 import sys
 from pathlib import Path

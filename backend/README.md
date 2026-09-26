@@ -1,0 +1,121 @@
+# 后端工程
+
+`backend/` 是 Python 工程，负责 PDF 解析、规则后处理、建库、检索、重排、证据门控、云端回答和评测工具。根目录 [项目总览](../README.md) 说明完整使用流程；[前端说明](../frontend/README.md) 说明 Vue 页面。
+
+~~~text
+backend/
+├── scripts/          # 命令行与 FastAPI 启动入口
+├── src/
+│   ├── rag_agent/     # RAG 核心业务
+│   ├── api/           # HTTP 适配层
+│   └── devtools/      # 评测、判分与诊断实现
+├── tests/            # 使用假模型与临时目录的离线测试
+├── data/             # 原始 PDF、缓存、索引和评测结果
+├── model/            # 本地 Embedding 与重排模型
+├── .env.example      # 配置示例；真实 .env 不入库
+└── requirements.txt  # Python 依赖
+~~~
+
+阅读时建议按 [解析与建库源码](src/README.md) → [运行入口](scripts/README.md) → [离线测试](tests/README.md) 走一遍。数据目录和缓存保留规则见 [数据说明](data/README.md)，PDF 解析后的规则处理见 [文档接入说明](src/rag_agent/ingestion/README.md)。
+
+下面的命令均在 `backend/` 目录执行。建库会按需调用 MinerU；真正提问会调用配置的云端回答模型。仅启动 API 或查询状态不会请求云端回答模型。
+
+## 首次准备
+
+以下 Python 命令均在 `backend/` 目录执行；路径如 `data/raw/` 也相对于该目录。
+
+### 1. 安装依赖
+
+当前开发环境为 Windows、Python 3.12。在 `backend/` 目录的 PowerShell 终端执行：
+
+```powershell
+# 在 backend/ 目录执行；已有 backend/.venv 时跳过第一条
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+命令直接使用项目解释器，无需提前激活虚拟环境。启动脚本会设置 `src` 导入路径，无需额外安装项目包。
+不需要安装本地 MinerU 或下载其解析模型。依赖版本尚未在全新环境中验证。Windows + NVIDIA CUDA 12.8 环境可在安装依赖后替换为 GPU 版 PyTorch（本机 RTX 3060 已验证）：
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install --force-reinstall --no-deps torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+.\.venv\Scripts\python.exe -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+```
+
+默认 Embedding 使用 CPU，BGE 重排器有 CUDA 时使用 GPU；设备可用 `EMBEDDING_DEVICE`、`RERANK_DEVICE` 调整。聊天入口会在显示“已就绪”前加载并预热重排模型；其耗时不计入逐题检索。百炼 Qwen3.x 默认关闭思考模式，可通过 `LLM_ENABLE_THINKING=true` 开启。
+
+### 2. 填写配置
+
+首次创建 `.env`，已有文件不会被覆盖：
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+打开 `backend/.env`，主要填写：
+
+- `MINERU_API_KEY`：云端 PDF 解析密钥。
+- `LLM_API_KEY`：回答模型密钥，同时核对 `LLM_BASE_URL` 和 `LLM_MODEL`。
+- `JUDGE_LLM_API_KEY`：可选的独立裁判模型密钥；同时配置 `JUDGE_LLM_BASE_URL` 和 `JUDGE_LLM_MODEL`。
+- `EMBEDDING_MODEL`：本地向量模型目录，默认 `model/Qwen3-Embedding-0.6B`。
+- `RERANKER_MODEL`：本地重排模型目录，默认 `model/bge-reranker-v2-m3`。
+- `LLM_TRUST_ENV`：是否让回答模型客户端读取系统代理等环境设置；系统代理无法连接模型服务时可设为 `false` 直连，修改后需重启问答入口。
+
+其他参数的含义见 [.env.example](.env.example)，不在这里重复配置清单。
+两个服务使用不同的密钥变量；系统中的同名环境变量优先。真实 `backend/.env` 被 Git 忽略。
+
+### 3. 准备 PDF 和本地模型
+
+将 PDF 直接放入 `data/raw/`，当前不递归扫描子目录。
+将完整的 Sentence Transformers 模型放入 `model/Qwen3-Embedding-0.6B/`，包括权重、分词器、`modules.json` 和池化配置。
+另行把 `BAAI/bge-reranker-v2-m3` 的完整 Transformers 模型目录放到
+`model/bge-reranker-v2-m3/`。程序使用 `local_files_only=True`，不会自动下载模型。
+模型相对路径基于 `backend/`，也支持配置绝对路径。只运行 PDF 解析时不需要本地模型或 LLM 密钥。
+
+临时没有重排模型时可在 `.env` 设置 `RERANK_ENABLED=false`。此时系统按 RRF 排名取前 5 条，
+且只能在拒答阈值为 `None` 时运行；该模式用于临时排障，不代表正式效果。
+
+## 快速开始
+
+准备完成后，先建库，再聊天。不必提前单独运行解析，建库已包含该步骤。
+
+```powershell
+# 在 backend/ 目录执行：按需解析 PDF、切块和计算向量，发布知识库
+.\.venv\Scripts\python.exe scripts/build_index.py
+
+# 加载知识库，输入问题并调用回答模型
+.\.venv\Scripts\python.exe scripts/chat.py
+```
+
+建库结束后查看 `data/processed/build_report.json`，确认哪些文档入库、失败或沿用了旧版。
+聊天输入 `exit` 退出；更新知识库后需重启聊天入口。后端 API 可单独启动：
+
+```powershell
+# 在 backend/ 目录执行；仅启动服务不会调用云端 LLM
+.\.venv\Scripts\python.exe scripts/serve_api.py
+```
+
+访问 `http://127.0.0.1:8000/docs` 查看 `GET /api/v1/status` 与 `POST /api/v1/ask`。Vue 前端已接入这两个接口，每次只发送当前问题，不传页面上的对话历史；页面启动和渲染流程见 [前端说明](../frontend/README.md)。命令行问答入口仍可单独使用。
+
+已有索引且前后端依赖准备好时，也可以在项目根目录运行 [start.ps1](../start.ps1) 同时启动 API 和前端。
+
+升级前只有 FAISS 的旧索引不能用于混合检索，聊天会明确提示重建。重新执行建库会复用未变化文档
+的解析缓存和向量产物，只在本地补建 BM25 和发布新索引，不会因此重新上传成功缓存的 PDF；
+原本就失败或发生变化的文档仍按正常增量规则处理。
+
+批量评测、模型判分、调试报告等操作，统一查阅 [scripts/README.md](scripts/README.md)。
+
+## 需要了解的运行规则
+
+- **三阶段处理**：MinerU 原始解析、`rules-v1` 本地后处理、文本切片彼此独立。原始 ZIP 与适配缓存不覆盖；规则版本变化只复用原始缓存重新执行本地后处理，不重新上传 PDF。`rules-v1` 不调用 LLM、不合并跨页表格、只保守处理有编号标题，失败时回退原始文档继续建库。
+- **章节感知切块**：连续同章节先组织后切分，短小兄弟章节在不跨主标题和特殊结构边界时合并；正文目标约 1000 字，800–1500 字为主要范围。独立公式不截断，长表格只按行分片并重复图注/表头。每个 chunk 保留章节、页码、来源块 ID 和块类型；单文档产物 `manifest.json` 保存长度分布、短块原因、超长原子块和完整性校验。将 `indexing/chunker.py` 的 `SECTION_AWARE_CHUNKING` 改为 `False` 可回退旧逐块策略。
+- **增量建库**：复用未变化文档的向量，再组装完整候选索引。默认允许部分解析失败；新文件失败时报告未入库，已有文档更新失败时可保留旧版。向量计算或写入异常仍会中止构建。
+- **混合召回**：Dense 与 BM25 各取 30 条，按稳定 `chunk_id` 去重后使用等权 RRF 融合为 20 条，再由 BGE 重排取前 5 条。BM25 使用 `jieba.lcut_for_search()`，同时保留英文缩写、型号、版本号、年份和百分比。
+- **RRF 原因**：余弦相似度与 BM25 分数不在同一量纲，不能直接相加；RRF 只组合各路排名，默认公式为 `weight / (60 + rank)`。
+- **拒答阈值**：默认 `RERANK_REJECT_THRESHOLD=None`，表示尚未校准，不会凭经验硬拒答。应使用项目评测集统计可回答/不可回答问题的 Top-1 `rerank_score` 分布后再设置阈值；sigmoid 分数只是单调映射，不是真实概率。
+- **索引保护**：每代同时保存并回读验证 FAISS、BM25 和 chunk ID 顺序，全部通过后才切换活动版本；历史索引和解析缓存不会自动删除。正式索引在 `data/vector_db/`，数据保留规则见 [数据目录说明](data/README.md)。
+- **评测与判分**：结果写入 `data/outputs/`。跑评测、纯本地导出、裁判判分三个入口相互独立；已有批次可再用独立裁判模型按正确性、完整性和相关性判分，详见 [运行入口说明](scripts/README.md) 第 4–6 节。
+- **当前边界**：聊天各轮独立检索，没有多轮历史；检索指标不等于答案正确率。离线测试验证程序行为，真实解析质量与回答效果仍需人工验收。
+
+遇到解析或建库失败，先看终端阶段提示及 `data/processed/` 下的报告。
+需要重新提交云端解析时，按 [运行入口说明](scripts/README.md) 中的 `--resubmit` 操作；重新提交可能消耗额外额度。

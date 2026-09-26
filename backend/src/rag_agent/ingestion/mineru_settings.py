@@ -1,5 +1,5 @@
 """
-mineru_settings.py —— MinerU 配置层：根目录 .env → 类型明确的配置对象
+mineru_settings.py —— MinerU 配置层：backend/.env → 类型明确的配置对象
 职责：只读取和校验配置，不上传文件，也不加载模型。
 关键设计：
     1. LLM 和 MinerU 共用 .env，但分别使用 LLM_*、MINERU_* 变量。
@@ -59,8 +59,8 @@ class MinerUSettings:
 
 def load_settings(root):
     """
-    读取项目根目录的统一 .env，仅选取 MINERU_* 配置。
-    :param root: 项目根目录，不是当前命令行所在目录
+    读取 backend/ 下的统一 .env，仅选取 MINERU_* 配置。
+    :param root: Python 工程根目录 backend/，不是当前命令行所在目录
     :return: MinerUSettings 对象，数字与布尔开关已完成类型转换
     """
     # 这里只把 .env 解析成字典。读取配置本身不会访问 MinerU，也不会污染 LLM 的环境变量。

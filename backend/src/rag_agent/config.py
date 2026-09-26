@@ -4,12 +4,12 @@ config.py —— 全局配置：所有路径、参数、模型名集中在这里
 原则：
     1. 业务模块（ingestion/indexing 等）不直接写路径和参数，
        统一从本模块取值；以后改目录结构、改参数，只动这一个文件。
-    2. 密钥读取自根目录 .env 或系统环境变量；系统环境变量优先，不硬编码。
+    2. 密钥读取自 backend/.env 或系统环境变量；系统环境变量优先，不硬编码。
 """
 import os
 from pathlib import Path
 
-# LLM 与 MinerU 共用根目录 .env，以 LLM_* / MINERU_* 区分配置，不注入环境变量。
+# LLM 与 MinerU 共用 backend/.env，以 LLM_* / MINERU_* 区分配置，不注入环境变量。
 from dotenv import dotenv_values
 _llm_env = dotenv_values(Path(__file__).resolve().parents[2] / ".env")
 
@@ -22,12 +22,12 @@ def _llm_setting(name, default):
 
 
 def _model_path(value, default):
-    """把模型配置解析为绝对路径；相对路径统一以项目根目录为基准。"""
+    """把模型配置解析为绝对路径；相对路径统一以 backend/ 为基准。"""
     path = Path(value or default).expanduser()
     return str(path if path.is_absolute() else BASE_DIR / path)
 
 
-# 项目根目录：本文件位于 src/rag_agent/，向上三级回到项目根目录
+# Python 工程根目录 backend/：本文件位于 backend/src/rag_agent/，向上三级。
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 # ========== 数据目录 ==========
@@ -65,7 +65,7 @@ TOP_K = RERANK_TOP_K
 
 
 # ========== 本地Embedding模型配置 ==========
-# 本地模型路径：相对路径以项目根目录为基准，也支持环境变量指定绝对路径
+# 本地模型路径：相对路径以 backend/ 为基准，也支持环境变量指定绝对路径。
 EMBEDDING_MODEL = _model_path(_llm_setting("EMBEDDING_MODEL", ""), "model/Qwen3-Embedding-0.6B")
 EMBEDDING_DEVICE = _llm_setting("EMBEDDING_DEVICE", "cpu").strip().lower()
 EMBEDDING_MAX_LENGTH = 8192   # Qwen3-Embedding支持最长32k，取8192平衡速度
@@ -81,8 +81,10 @@ RERANKER_MODEL = _model_path(_llm_setting("RERANKER_MODEL", ""), "model/bge-rera
 #   月之暗面Kimi: LLM_BASE_URL=https://api.moonshot.cn/v1    LLM_MODEL=moonshot-v1-8k
 #   OpenAI      : LLM_BASE_URL=https://api.openai.com/v1     LLM_MODEL=gpt-4o-mini
 LLM_BASE_URL = _llm_setting("LLM_BASE_URL", "https://api.deepseek.com/v1")
-LLM_API_KEY = _llm_setting("LLM_API_KEY", "")          # 在项目根目录 .env 里填：LLM_API_KEY=sk-xxx
+LLM_API_KEY = _llm_setting("LLM_API_KEY", "")          # 在 backend/.env 里填：LLM_API_KEY=sk-xxx
 LLM_MODEL = _llm_setting("LLM_MODEL", "deepseek-chat")
+# HTTP 客户端默认读取系统代理；若系统代理无法完成 TLS 握手，可在 .env 设为 false 直连。
+LLM_TRUST_ENV = _llm_setting("LLM_TRUST_ENV", "true").strip().lower() in {"1", "true", "yes", "on"}
 # 百炼 Qwen3.8 的思考模式默认开启；日常资料问答明确关闭，其他服务不发送此扩展参数。
 LLM_ENABLE_THINKING = _llm_setting("LLM_ENABLE_THINKING", "false").strip().lower() in {"1", "true", "yes", "on"}
 LLM_TEMPERATURE = 0.3       # 低温度：事实问答更稳，减少编造

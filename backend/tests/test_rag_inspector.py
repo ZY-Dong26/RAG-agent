@@ -1,3 +1,5 @@
+"""问答诊断工具的离线测试：验证请求记录、相邻片段定位与报告导出。"""
+
 import json
 import tempfile
 import unittest

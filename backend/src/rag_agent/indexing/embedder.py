@@ -98,7 +98,7 @@ class Embedding:
 
 if __name__ == "__main__":
     # 模块自测入口：运行命令 python -m rag_agent.indexing.embedder
-    # 从项目根目录运行时，需要先把 src 加入 PYTHONPATH，或以可编辑模式安装项目包
+    # 从 backend/ 运行时，需要先把 src 加入 PYTHONPATH，或以可编辑模式安装项目包
 
     # 1. 实例化Embedding对象，加载本地模型（首次加载需要耗时）
     emb = Embedding()

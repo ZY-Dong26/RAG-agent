@@ -2,7 +2,7 @@
 judge_config.py —— 裁判模型的独立配置声明
 
 职责：
-    1. 从项目根目录 .env 读取裁判模型的连接信息（base_url、api_key、model）。
+    1. 从 backend/.env 读取裁判模型的连接信息（base_url、api_key、model）。
     2. 声明判分策略参数（temperature、max_tokens），固定为代码常量。
 
 设计原因：

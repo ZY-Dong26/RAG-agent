@@ -11,6 +11,7 @@ tests/
 ├── test_bm25_store.py       # 中文分词、BM25 持久化与损坏检测
 ├── test_hybrid_retrieval.py # RRF 去重、单路候选与假 BGE 重排
 ├── test_qa_service.py       # 预热入口、分项计时、证据门控与生成隔离
+├── test_api.py              # 假服务验证 HTTP 启动、状态、问答和错误保护
 ├── test_generator_thinking.py # 百炼 Qwen 思考参数及其他服务兼容
 ├── test_retrieval_config.py # 混合检索默认值及模型路径解析
 ├── test_progress.py         # 进度提示、等待线程退出与错误信息保护

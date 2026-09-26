@@ -1,8 +1,8 @@
 """
-service.py —— 命令行与未来前端共用的问答应用服务
+service.py —— 命令行与 FastAPI 共用的问答应用服务
 
-前端不应直接操作 FAISS、BM25、重排器或 LLM 客户端，只调用 RAGService.ask()。
-这样以后增加 API 或界面时，检索和生成规则仍然只有一份实现。
+浏览器通过 FastAPI 提问；API 路由和命令行入口都调用 RAGService.ask()。
+两种入口共用一套检索和生成规则，不在路由中复制业务流程。
 """
 from dataclasses import dataclass
 from time import perf_counter
