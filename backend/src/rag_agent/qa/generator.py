@@ -6,22 +6,29 @@
 #   3. prompt = 系统约束(只依据资料回答) + 编号资料 + 问题，句末用[编号]标注引用
 #   4. 资料拼接使用字符预算 MAX_CONTEXT_CHARS；它不是完整请求的 Token 计数
 
+from urllib.parse import urlparse
+
 from rag_agent import config
 
 
 class Generator:
     """基于云端大模型的回答生成器（OpenAI兼容接口）"""
 
-    def __init__(self, client=None, model=None, temperature=None, max_tokens=None):
+    def __init__(self, client=None, model=None, temperature=None, max_tokens=None, enable_thinking=None):
         """
         :param client: openai客户端实例；为None时按config自动创建（注入点）
         :param model: 模型名，如 deepseek-chat；为None读取config.LLM_MODEL
         :param temperature: 采样温度，None用config（0.3，事实问答偏保守）
         :param max_tokens: 最大输出token数，None用config.LLM_MAX_TOKENS
+        :param enable_thinking: 百炼 Qwen3.x 的思考模式；None 时读取 LLM_ENABLE_THINKING。
         """
         self.model = model or config.LLM_MODEL
         self.temperature = config.LLM_TEMPERATURE if temperature is None else temperature
         self.max_tokens = max_tokens or config.LLM_MAX_TOKENS
+        self.enable_thinking = config.LLM_ENABLE_THINKING if enable_thinking is None else enable_thinking
+        host = urlparse(config.LLM_BASE_URL).hostname or ""
+        # enable_thinking 是百炼扩展参数，只对其 Qwen3.x 接口发送，避免其他兼容服务拒绝请求。
+        self.thinking_supported = host.startswith("dashscope") and host.endswith(".aliyuncs.com") and self.model.startswith("qwen3.")
 
         if client is not None:
             # 外部注入的客户端（测试/特殊场景），跳过密钥检查与客户端创建；模型名等默认参数仍来自 config
@@ -95,12 +102,15 @@ class Generator:
         messages = self.build_prompt(query, hits)
 
         # OpenAI兼容接口的标准调用：服务端需要支持该协议和传入参数
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-        )
+        request = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+        }
+        if self.thinking_supported:
+            request["extra_body"] = {"enable_thinking": self.enable_thinking}
+        response = self.client.chat.completions.create(**request)
         usage = getattr(response, "usage", None)
         if usage is not None:
             self.last_usage = {name: getattr(usage, name, None) for name in

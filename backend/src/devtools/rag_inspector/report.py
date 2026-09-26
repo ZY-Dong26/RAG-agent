@@ -106,6 +106,8 @@ def _safe_slug(question: str) -> str:
 
 def _render_html(trace: dict) -> str:
     timing = trace.get("timing", {})
+    recall = timing.get("recall_seconds")
+    rerank = timing.get("rerank_seconds")
     retrieval = timing.get("retrieval_seconds")
     generation = timing.get("generation_seconds")
     request = trace.get("request", {})
@@ -118,6 +120,8 @@ def _render_html(trace: dict) -> str:
     )
     error = trace.get("error")
     answer = trace.get("answer") or ""
+    recall_text = "—" if recall is None else f"{recall:.2f}s"
+    rerank_text = "—" if rerank is None else f"{rerank:.2f}s"
     retrieval_text = "—" if retrieval is None else f"{retrieval:.2f}s"
     generation_text = "—" if generation is None else f"{generation:.2f}s"
     return f"""<!doctype html>
@@ -147,7 +151,9 @@ pre{{white-space:pre-wrap;word-break:break-word;background:#f8fafc;color:var(--c
 <div class="question">{_escape(trace.get('question'))}</div>
 <div class="stats">
   <div class="stat"><span>召回候选</span><b>{len(trace.get('hits', []))}</b><span>实际发送 {sent_count} 条</span></div>
-  <div class="stat"><span>检索与门控耗时</span><b>{retrieval_text}</b><span>混合召回、RRF 与重排</span></div>
+  <div class="stat"><span>召回与融合</span><b>{recall_text}</b><span>Dense、BM25、RRF</span></div>
+  <div class="stat"><span>BGE 重排</span><b>{rerank_text}</b><span>候选评分</span></div>
+  <div class="stat"><span>检索合计</span><b>{retrieval_text}</b><span>召回与重排</span></div>
   <div class="stat"><span>生成耗时</span><b>{generation_text}</b><span>云端模型请求</span></div>
   <div class="stat"><span>Prompt 字符</span><b>{prompt_chars}</b><span>system + user</span></div>
 </div>

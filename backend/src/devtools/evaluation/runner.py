@@ -98,6 +98,7 @@ def run_evaluation(rows, source_map, retriever, generator, directory, signature,
                 targets = sorted({source_map[ref] for ref in row["reference_context_ids"]})
                 result = {**row, "targets": targets, "missing_sources": sorted(set(targets)-available),
                           "hits": [], "answer": None, "usage": None, "metrics": None,
+                          "recall_seconds": None, "rerank_seconds": None,
                           "retrieval_seconds": None, "generation_seconds": None, "error": None,
                           "answerable": None, "evidence_status": None}
                 report(f"[评测 {number}/{len(rows)}] 题目 {qid}：{row['question_type']}")
@@ -105,13 +106,21 @@ def run_evaluation(rows, source_map, retriever, generator, directory, signature,
                 phase = "retrieval"
                 try:
                     with stage("检索评测资料"):
+                        retrieval_started = time.perf_counter()
                         step = time.perf_counter()
-                        # 新问答链路先保留完整 RRF 候选供 BGE 重排；旧测试未注入重排器时
-                        # 维持原有 top-k 检索行为，避免离线替身加载真实模型。
+                        # 完整 RRF 候选进入重排；未注入重排器的离线测试沿用原 top-k 行为。
                         candidates = retriever.retrieve(row["question"], top_k=None if reranker else k)
-                        result["hits"] = (reranker.rerank(row["question"], candidates, top_k=k)
-                                          if reranker else candidates)
-                        result["retrieval_seconds"] = time.perf_counter()-step
+                        result["recall_seconds"] = time.perf_counter()-step
+                        if reranker is not None:
+                            phase = "rerank"
+                            step = time.perf_counter()
+                            result["hits"] = reranker.rerank(row["question"], candidates, top_k=k)
+                            result["rerank_seconds"] = time.perf_counter()-step
+                        else:
+                            result["hits"] = candidates
+                        # 保留原字段含义：检索合计覆盖召回、RRF 与重排。
+                        result["retrieval_seconds"] = time.perf_counter()-retrieval_started
+                        phase = "retrieval"
                     result["metrics"] = retrieval_metrics(result["hits"], targets, k)
                     decision = evidence_policy.evaluate(result["hits"]) if evidence_policy else None
                     result["answerable"] = decision.answerable if decision else bool(result["hits"])
@@ -136,6 +145,8 @@ def run_evaluation(rows, source_map, retriever, generator, directory, signature,
                     result["status"] = "error"
                     result["error"] = f"{phase}: {type(error).__name__}；请检查配置、连接及服务状态"
                     result[phase + "_seconds"] = time.perf_counter()-step
+                    if phase in {"retrieval", "rerank"}:
+                        result["retrieval_seconds"] = time.perf_counter()-retrieval_started
                     report(f"[失败] 题目 {qid}，阶段 {phase}；继续下一题")
                 result["total_seconds"] = time.perf_counter()-started
                 key = hashlib.sha256(qid.encode()).hexdigest()
@@ -159,6 +170,10 @@ def run_evaluation(rows, source_map, retriever, generator, directory, signature,
         report(f"[检索] hit@k {pct(summary.get('document_hit_at_k'))} | "
                f"recall@k {pct(summary.get('document_recall_at_k'))} | "
                f"MRR {pct(summary.get('document_mrr_at_k'))}")
+        report(f"[耗时] 召回与融合 {sec(summary.get('mean_recall_seconds'))}，"
+               f"重排 {sec(summary.get('mean_rerank_seconds'))}，"
+               f"检索合计 {sec(summary.get('mean_retrieval_seconds'))}，"
+               f"生成 {sec(summary.get('mean_generation_seconds'))}")
         report(f"[延迟] 平均 {sec(summary.get('mean_total_seconds'))}，"
                f"P50 {sec(summary.get('p50_seconds'))}，P95 {sec(summary.get('p95_seconds'))}")
         report(f"[消耗] prompt {tokens.get('prompt_tokens', 0)} + "

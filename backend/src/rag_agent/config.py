@@ -57,6 +57,8 @@ RERANK_MAX_LENGTH = 1024
 RERANK_BATCH_SIZE = 8
 RERANK_REJECT_THRESHOLD = None
 RERANK_ENABLED = _llm_setting("RERANK_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
+# 6 GB 显存机器优先留给重排器；auto 在有 CUDA 时使用 GPU。
+RERANK_DEVICE = _llm_setting("RERANK_DEVICE", "auto").strip().lower()
 
 # 保留旧名称供评测脚本和外部调用使用；它现在表示最终交给生成器的证据数量。
 TOP_K = RERANK_TOP_K
@@ -65,6 +67,7 @@ TOP_K = RERANK_TOP_K
 # ========== 本地Embedding模型配置 ==========
 # 本地模型路径：相对路径以项目根目录为基准，也支持环境变量指定绝对路径
 EMBEDDING_MODEL = _model_path(_llm_setting("EMBEDDING_MODEL", ""), "model/Qwen3-Embedding-0.6B")
+EMBEDDING_DEVICE = _llm_setting("EMBEDDING_DEVICE", "cpu").strip().lower()
 EMBEDDING_MAX_LENGTH = 8192   # Qwen3-Embedding支持最长32k，取8192平衡速度
 
 # 本地重排模型只从磁盘加载，不允许 transformers 自动联网下载。
@@ -80,6 +83,8 @@ RERANKER_MODEL = _model_path(_llm_setting("RERANKER_MODEL", ""), "model/bge-rera
 LLM_BASE_URL = _llm_setting("LLM_BASE_URL", "https://api.deepseek.com/v1")
 LLM_API_KEY = _llm_setting("LLM_API_KEY", "")          # 在项目根目录 .env 里填：LLM_API_KEY=sk-xxx
 LLM_MODEL = _llm_setting("LLM_MODEL", "deepseek-chat")
+# 百炼 Qwen3.8 的思考模式默认开启；日常资料问答明确关闭，其他服务不发送此扩展参数。
+LLM_ENABLE_THINKING = _llm_setting("LLM_ENABLE_THINKING", "false").strip().lower() in {"1", "true", "yes", "on"}
 LLM_TEMPERATURE = 0.3       # 低温度：事实问答更稳，减少编造
 LLM_MAX_TOKENS = 1024       # 单次回答最大输出token
 MAX_CONTEXT_CHARS = 4000    # 拼给LLM的资料字符预算（不等同于 Token 上限，不含系统提示词和问题）

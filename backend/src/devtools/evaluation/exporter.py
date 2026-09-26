@@ -54,6 +54,8 @@ def summarize(rows):
         "document_hit_at_k": average([row["metrics"].get("hit_at_k") for row in metric_rows]),
         "document_recall_at_k": average([row["metrics"].get("recall_at_k") for row in metric_rows]),
         "document_mrr_at_k": average([row["metrics"].get("reciprocal_rank_at_k") for row in metric_rows]),
+        "mean_recall_seconds": average([row.get("recall_seconds") for row in rows]),
+        "mean_rerank_seconds": average([row.get("rerank_seconds") for row in rows]),
         "mean_retrieval_seconds": average([row.get("retrieval_seconds") for row in rows]),
         "mean_generation_seconds": average([row.get("generation_seconds") for row in rows]),
         "mean_total_seconds": average(durations), "p50_seconds": percentile(.5), "p95_seconds": percentile(.95),
@@ -157,14 +159,16 @@ def judge_summary_markdown(rows):
                   for name in sorted({row.get("question_type", "未分类") for row in rows}))
     lines = ["# RAG 评测与模型判分汇总", "",
              "检索指标按已有逐题记录统计；模型判分范围为 0–3，未判题不参与均值。", "",
-             "| 题型 | 题数 | Hit@K | Recall@K | MRR@K | 检索耗时 | 生成耗时 | 总耗时 | 正确性 | 完整性 | 相关性 |",
-             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+             "| 题型 | 题数 | Hit@K | Recall@K | MRR@K | 召回与融合 | 重排 | 检索合计 | 生成耗时 | 总耗时 | 正确性 | 完整性 | 相关性 |",
+             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for name, group in groups:
         summary = summarize(group)
         scores = [_score_average(group, key) for key in ("correctness", "completeness", "relevance")]
         formatted = ["" if value is None else f"{value:.2f}" for value in scores]
         lines.append(f"| {name} | {len(group)} | {_pct(summary['document_hit_at_k'])} | "
                      f"{_pct(summary['document_recall_at_k'])} | {_pct(summary['document_mrr_at_k'])} | "
+                     f"{_seconds(summary['mean_recall_seconds'])} | "
+                     f"{_seconds(summary['mean_rerank_seconds'])} | "
                      f"{_seconds(summary['mean_retrieval_seconds'])} | "
                      f"{_seconds(summary['mean_generation_seconds'])} | "
                      f"{_seconds(summary['mean_total_seconds'])} | " + " | ".join(formatted) + " |")
@@ -194,7 +198,7 @@ def export_results(directory, rows=None, total=None):
     summary = summarize(rows)
     summary.update(dataset_questions=total, remaining=total-len(rows),
                    metric_scope="文档级；K 是检索片段数，不代表正确段落命中；答案评分见 judge 字段",
-                   latency_scope="不含初始化时间；包含本题接口等待，P50/P95 使用最近秩",
+                   latency_scope="不含初始化时间；检索合计含召回、RRF 与重排，旧批次无分项；P50/P95 使用最近秩",
                    usage_scope="仅统计回答接口实际返回的用量；裁判用量保存在各 item 的 judge 字段")
     for field in ("question_type", "difficulty"):
         values = sorted({row.get(field, "未分类") for row in rows})
@@ -207,7 +211,8 @@ def export_results(directory, rows=None, total=None):
 
     columns = ["question_id", "question_type", "difficulty", "question", "ground_truth", "answer",
                "eval_criteria", "status", "retrieved_sources", "missing_sources", "hit_at_k", "recall_at_k",
-               "reciprocal_rank_at_k", "retrieval_seconds", "generation_seconds", "total_seconds",
+               "reciprocal_rank_at_k", "recall_seconds", "rerank_seconds",
+               "retrieval_seconds", "generation_seconds", "total_seconds",
                "prompt_tokens", "completion_tokens", "total_tokens", "error", "人工评分", "人工备注",
                *JUDGE_COLUMNS]
     with (directory / "results.csv").open("w", encoding="utf-8-sig", newline="") as stream:
@@ -242,7 +247,11 @@ def export_results(directory, rows=None, total=None):
                   f"**RAG 回答：** {row.get('answer') or '（无回答）'}", "",
                   f"**评分标准：** {row.get('eval_criteria', '')}", "", *judge_lines,
                   f"状态：{row.get('status')}；耗时：{(row.get('total_seconds') or 0):.2f} 秒；"
-                  f"缺失目标文档：{row.get('missing_sources', [])}", ""]
+                  f"缺失目标文档：{row.get('missing_sources', [])}", "",
+                  f"召回与融合：{_seconds(row.get('recall_seconds')) or '—'}；"
+                  f"重排：{_seconds(row.get('rerank_seconds')) or '—'}；"
+                  f"检索合计：{_seconds(row.get('retrieval_seconds')) or '—'}；"
+                  f"生成：{_seconds(row.get('generation_seconds')) or '—'}", ""]
         for hit in row.get("hits", []):
             meta = hit.get("metadata", {})
             lines += [f"### 检索 [{meta.get('rank')}] {meta.get('source')} 第 {meta.get('page')} 页，"

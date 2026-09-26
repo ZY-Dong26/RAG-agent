@@ -51,16 +51,26 @@ class TraceRecorder:
 
     question: str
     hits: list[dict] = field(default_factory=list)
+    recall_seconds: float | None = None
+    rerank_seconds: float | None = None
     retrieval_seconds: float | None = None
+    total_seconds: float | None = None
     request: dict = field(default_factory=dict)
     answer: str | None = None
     generation_seconds: float | None = None
     error: str | None = None
     neighbors: dict[str, list[dict]] = field(default_factory=dict)
 
-    def record_retrieval(self, hits: list[dict], elapsed: float) -> None:
+    def record_retrieval(self, hits: list[dict], elapsed: float,
+                         recall_seconds: float | None = None,
+                         rerank_seconds: float | None = None,
+                         total_seconds: float | None = None) -> None:
+        """保存实际检索耗时；旧调用只传合计时，分项保持未知。"""
         self.hits = deepcopy(hits)
+        self.recall_seconds = recall_seconds
+        self.rerank_seconds = rerank_seconds
         self.retrieval_seconds = elapsed
+        self.total_seconds = total_seconds
 
     def record_request(self, request: dict) -> None:
         self.request = _jsonable(deepcopy(request))
@@ -77,8 +87,11 @@ class TraceRecorder:
         return {
             "question": self.question,
             "timing": {
+                "recall_seconds": self.recall_seconds,
+                "rerank_seconds": self.rerank_seconds,
                 "retrieval_seconds": self.retrieval_seconds,
                 "generation_seconds": self.generation_seconds,
+                "total_seconds": self.total_seconds,
             },
             "request": self.request,
             "hits": self.hits,

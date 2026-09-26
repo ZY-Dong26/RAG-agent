@@ -52,6 +52,11 @@ def main():
         sys.exit(1)
 
     service = RAGService(retriever=ret, generator=gen)
+    try:
+        service.prepare()
+    except (RuntimeError, ValueError, OSError):
+        print("[启动失败] 本地重排模型加载或预热失败；请检查模型目录、设备和显存。", flush=True)
+        return
     print("\nRAG 命令行问答已就绪。输入 exit 退出。\n")
 
     while True:

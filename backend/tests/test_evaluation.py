@@ -63,6 +63,26 @@ class EvaluationTests(unittest.TestCase):
             self.assertNotIn("secret-token", text)
             self.assertNotIn("https://private", text)
 
+    def test_rerank_latency_is_recorded_separately(self):
+        """逐题和汇总记录均区分召回、重排、检索合计。"""
+        hits = [{"text": "证据", "metadata": {"source": "a", "rank": 1}}]
+        retriever = SimpleNamespace(store=SimpleNamespace(chunks=hits), retrieve=lambda q, top_k: hits)
+        reranker = SimpleNamespace(rerank=lambda q, candidates, top_k: candidates)
+        generator = SimpleNamespace(generate=lambda q, evidence: "回答",
+                                    build_prompt=Generator.build_prompt, last_usage=None)
+        row = {"question_id": 1, "question": "问题", "question_type": "事实", "difficulty": "简单",
+               "ground_truth": "答案", "eval_criteria": "规则", "reference_context_ids": ["文档1"]}
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = run_evaluation([row], {"文档1": "a"}, retriever, generator, tmp, {},
+                                     reranker=reranker)
+            item = json.loads((Path(tmp) / "results.jsonl").read_text(encoding="utf-8"))
+            self.assertIsNotNone(item["recall_seconds"])
+            self.assertIsNotNone(item["rerank_seconds"])
+            self.assertGreaterEqual(item["retrieval_seconds"], item["recall_seconds"])
+            self.assertGreaterEqual(item["retrieval_seconds"], item["rerank_seconds"])
+            self.assertIsNotNone(summary["mean_rerank_seconds"])
+            self.assertIn("rerank_seconds", (Path(tmp) / "results.csv").read_text(encoding="utf-8-sig"))
+
     def test_invalid_mapping_rejected(self):
         """缺少目标文档映射时，在任何模型调用之前拒绝评测。"""
         row = {"question_id": 1, "question": "问题", "question_type": "事实", "difficulty": "简单",

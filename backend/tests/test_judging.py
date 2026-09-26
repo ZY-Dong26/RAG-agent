@@ -83,7 +83,7 @@ class JudgingTests(unittest.TestCase):
             self.assertEqual(load_items(root)[0]["judge"]["max_tokens"], 321)
             self.assertNotIn("https://judge.example/v1", json.dumps(load_items(root), ensure_ascii=False))
             self.assertIn("证据支持结论", (root / "report.md").read_text(encoding="utf-8"))
-            self.assertIn("| 事实题 | 2 | 100.0% | 100.0% | 100.0% | 0.10s | 0.20s | 0.30s | 3.00 | 2.00 | 3.00 |",
+            self.assertIn("| 事实题 | 2 | 100.0% | 100.0% | 100.0% |  |  | 0.10s | 0.20s | 0.30s | 3.00 | 2.00 | 3.00 |",
                           (root / "judge_summary.md").read_text(encoding="utf-8"))
 
             again = judge_directory(root, client, "judge-model", "https://judge.example/v1",

@@ -30,6 +30,14 @@ class FusionTests(unittest.TestCase):
 
 
 class RerankerTests(unittest.TestCase):
+    def test_prepare_is_idempotent_with_injected_scorer(self):
+        """假评分器在准备阶段不加载本地模型，重复预热无额外动作。"""
+        reranker = Reranker(scorer=lambda _q, texts: [0.0 for _ in texts])
+        reranker.prepare()
+        reranker.prepare()
+        self.assertTrue(reranker._prepared)
+        self.assertIsNone(reranker.model)
+
     def test_fake_scorer_changes_order_and_limits_top_five(self):
         """注入评分器可改变 RRF 排名，并且最终最多返回五条。"""
         candidates = [{"text": str(i), "metadata": {

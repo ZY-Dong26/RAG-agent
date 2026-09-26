@@ -67,7 +67,14 @@ py -3.12 -m venv .venv
 ```
 
 命令直接使用项目解释器，无需提前激活虚拟环境。启动脚本会设置 `src` 导入路径，无需额外安装项目包。
-不需要安装本地 MinerU 或下载其解析模型。依赖版本尚未在全新环境中验证；需要 GPU 时须准备适配本机的 PyTorch 构建，没有可用 CUDA 时 Embedding 使用 CPU。
+不需要安装本地 MinerU 或下载其解析模型。依赖版本尚未在全新环境中验证。Windows + NVIDIA CUDA 12.8 环境可在安装依赖后替换为 GPU 版 PyTorch（本机 RTX 3060 已验证）：
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install --force-reinstall --no-deps torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+.\.venv\Scripts\python.exe -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+```
+
+默认 Embedding 使用 CPU，BGE 重排器有 CUDA 时使用 GPU；设备可用 `EMBEDDING_DEVICE`、`RERANK_DEVICE` 调整。聊天入口会在显示“已就绪”前加载并预热重排模型；其耗时不计入逐题检索。百炼 Qwen3.x 默认关闭思考模式，可通过 `LLM_ENABLE_THINKING=true` 开启。
 
 ### 2. 填写配置
 

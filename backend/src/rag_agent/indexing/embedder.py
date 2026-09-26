@@ -26,7 +26,7 @@ class Embedding:
         """
         Embedding 类初始化方法：加载本地embedding模型与分词器
         :param model_name: 本地embedding模型文件夹路径；为None时读取config.EMBEDDING_MODEL
-        :param device: 模型运行设备，可选cuda / cpu；None时自动优先使用NVIDIA显卡cuda
+        :param device: 模型运行设备，可选 auto / cuda / cpu；None 时读取 EMBEDDING_DEVICE。
         :param max_length: 文本最大token长度，超过会截断；None读取config.EMBEDDING_MAX_LENGTH
         """
         # 模型路径优先级：传入参数 > 全局配置文件
@@ -41,8 +41,14 @@ class Embedding:
                 "请确认 config.py 的 EMBEDDING_MODEL 填写的是模型解压后的文件夹路径。"
             )
 
-        # 自动判断设备：有可用NVIDIA GPU就用cuda加速，否则回退CPU
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        # 默认让 Embedding 留在 CPU，为 6 GB 显存上的 BGE 重排器保留空间；
+        # 显式 auto 才按 CUDA 可用性选择，显式 cuda 不可用时直接给出配置错误。
+        selected = device or config.EMBEDDING_DEVICE
+        if selected not in {"auto", "cpu", "cuda"}:
+            raise ValueError("EMBEDDING_DEVICE 只能是 auto、cpu 或 cuda")
+        self.device = ("cuda" if torch.cuda.is_available() else "cpu") if selected == "auto" else selected
+        if self.device == "cuda" and not torch.cuda.is_available():
+            raise RuntimeError("EMBEDDING_DEVICE=cuda，但当前 PyTorch 未检测到 CUDA")
 
         # SentenceTransformer按模型目录的官方流水线加载模型：
         # Qwen3骨干 → 1_Pooling(当前本地配置为末个有效 Token 池化) → 2_Normalize(归一化)

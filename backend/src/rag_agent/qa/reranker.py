@@ -2,7 +2,7 @@
 reranker.py —— 本地 BGE Cross-Encoder 重排器
 
 职责：对 RRF 候选的 ``(问题, 文本块)`` 配对批量打分，并按原始 logit 降序返回最终证据。
-模型采用延迟加载，一个 Reranker 实例在多轮问答中只加载一次；空候选不会触发模型加载。
+入口在准备阶段调用 prepare() 加载并预热模型；空候选仍不会在 rerank() 中触发加载。
 """
 import math
 from pathlib import Path
@@ -27,11 +27,12 @@ class Reranker:
         """
         :param scorer: 测试注入函数 ``scorer(query, texts) -> logits``；传入后不加载真实模型。
         :param model_name: 本地模型目录，默认读取 config.RERANKER_MODEL。
-        :param device: cuda/cpu；None 时在首次加载时自动选择。
+        :param device: auto/cuda/cpu；None 时读取 RERANK_DEVICE。
         """
         self.scorer = scorer
         self.model_name = model_name or config.RERANKER_MODEL
-        self.device = device
+        self.device = device or config.RERANK_DEVICE
+        self._prepared = False
         self.max_length = max_length or config.RERANK_MAX_LENGTH
         self.batch_size = batch_size or config.RERANK_BATCH_SIZE
         self.top_k = top_k or config.RERANK_TOP_K
@@ -50,11 +51,15 @@ class Reranker:
         import torch
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-        self.device = self.device or ("cuda" if torch.cuda.is_available() else "cpu")
+        if self.device not in {"auto", "cpu", "cuda"}:
+            raise ValueError("RERANK_DEVICE 只能是 auto、cpu 或 cuda")
+        self.device = ("cuda" if torch.cuda.is_available() else "cpu") if self.device == "auto" else self.device
+        if self.device == "cuda" and not torch.cuda.is_available():
+            raise RuntimeError("RERANK_DEVICE=cuda，但当前 PyTorch 未检测到 CUDA")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, local_files_only=True)
         model_args = {"local_files_only": True}
         if self.device == "cuda":
-            model_args["torch_dtype"] = torch.float16
+            model_args["dtype"] = torch.float16
         try:
             self.model = AutoModelForSequenceClassification.from_pretrained(
                 self.model_name, **model_args
@@ -67,6 +72,15 @@ class Reranker:
                 self.model_name, local_files_only=True
             ).to(self.device)
         self.model.eval()
+
+    def prepare(self):
+        """在接收问题前加载并用短文本预热一次；重复调用不重复推理，测试评分器不加载模型。"""
+        if self._prepared:
+            return
+        self._load_model()
+        if self.scorer is None:
+            self._model_logits("预热", ["预热文本"])
+        self._prepared = True
 
     def _model_logits(self, query, texts):
         """按 batch 推理并返回与输入文本一一对应的 Python float logit。"""

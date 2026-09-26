@@ -16,7 +16,6 @@ import argparse
 import sys
 import webbrowser
 from pathlib import Path
-from time import perf_counter
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -50,12 +49,14 @@ def _ask(question, service, generator, open_report=False):
         3. finally 中恢复原 client，加载相邻 chunk，写 JSON + HTML 报告。
     """
     recorder = TraceRecorder(question)
-    started = perf_counter()
     original_client = generator.client
     try:
         generator.client = RecordingClient(original_client, recorder)
         result = service.ask(question)
-        recorder.record_retrieval(result.hits, perf_counter() - started)
+        recorder.record_retrieval(result.hits, result.timing["retrieval_seconds"],
+                                  recall_seconds=result.timing["recall_seconds"],
+                                  rerank_seconds=result.timing["rerank_seconds"],
+                                  total_seconds=result.timing["total_seconds"])
         if recorder.answer is None:
             recorder.answer = result.answer
     except Exception as error:
@@ -86,6 +87,7 @@ def main():
         with stage("检查 LLM 配置并创建客户端"):
             generator = Generator()
         service = RAGService(retriever=retriever, generator=generator)
+        service.prepare()
     except (RuntimeError, ValueError, OSError) as error:
         print(f"[启动失败] {error}")
         return

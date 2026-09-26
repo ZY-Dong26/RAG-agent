@@ -38,7 +38,7 @@ scripts/
 .\.venv\Scripts\python.exe scripts/chat.py
 ```
 
-无参数。输入问题后执行 Dense/BM25 → RRF → BGE 重排 → 证据门控 → 云端生成；
+无参数。启动时先加载并预热 BGE 重排模型，显示“已就绪”后再输入问题。逐题执行 Dense/BM25 → RRF → BGE 重排 → 证据门控 → 云端生成；
 拒答时不会调用回答模型。输入 `exit`/`quit`/`q`/`退出` 或 Ctrl+C 结束。
 重新建库后需重启本入口才会加载新索引。
 
@@ -74,13 +74,15 @@ MinerU 原始 ZIP、解压目录和适配缓存保存在 `data/processed/mineru/
 | `--retry-failed` | 重跑状态为 error 的旧题（会再产生费用） |
 | `--dataset` / `--source-map` | 换用自定义评测集与文档映射 |
 
-续跑示例（接着上次没跑完的批次）：
+续跑示例（接着由当前代码创建且尚未跑完的批次）：
 
 ```powershell
-.\.venv\Scripts\python.exe scripts/evaluate.py --output "data/outputs/evaluation/testdata-baseline-20260923"
+.\.venv\Scripts\python.exe scripts/evaluate.py --output "data/outputs/evaluation/my-current-run"
 ```
 
-结果在 `data/outputs/evaluation/<批次>/`：`items/`（逐题权威记录）、`report.md`、`results.csv`、`summary.json` 和 `judge_summary.md`。CSV 末尾四列预留给模型判分；evaluate.py 本身不调用裁判模型。Ctrl+C 中断后可续跑，未保存的那次请求可能已计费。
+本次计时字段与运行快照发生变化，旧批次不能用新代码续跑；请为新评测使用新输出目录。旧批次仍可纯本地重新导出，缺失的分项耗时会显示为空。
+
+结果在 `data/outputs/evaluation/<批次>/`：`items/`（逐题权威记录）、`report.md`、`results.csv`、`summary.json` 和 `judge_summary.md`。新批次先预热 BGE，再逐题记录召回与融合、重排、检索合计、生成耗时；检索合计包含重排，模型初始化不计入逐题耗时。CSV 末尾四列预留给模型判分；evaluate.py 本身不调用裁判模型。Ctrl+C 中断后可续跑，未保存的那次请求可能已计费。
 
 ## 5. 重新导出：export_results.py
 
@@ -113,7 +115,7 @@ MinerU 原始 ZIP、解压目录和适配缓存保存在 `data/processed/mineru/
 .\.venv\Scripts\python.exe scripts/debug_chat.py --open      # 每轮结束自动打开 HTML 报告
 ```
 
-报告输出到 `data/outputs/debug/`。
+报告输出到 `data/outputs/debug/`。HTML 及 JSON 分别显示召回与融合、重排、检索合计、生成耗时；检索合计不包含生成。
 
 ## 本地重排与阈值校准
 

@@ -41,6 +41,34 @@ def evidence():
 
 
 class RAGServiceTests(unittest.TestCase):
+    def test_prepare_runs_before_first_question_and_timing_excludes_generation(self):
+        """预热由入口触发；检索合计不包含生成，分项耗时可供诊断报告使用。"""
+        from time import sleep
+
+        class PreparedReranker(FakeReranker):
+            def __init__(self):
+                super().__init__()
+                self.prepares = 0
+                self.device = "cuda"
+
+            def prepare(self):
+                self.prepares += 1
+
+        class SlowGenerator(FakeGenerator):
+            def generate(self, question, hits):
+                sleep(.02)
+                return super().generate(question, hits)
+
+        reranker = PreparedReranker()
+        service = RAGService(FakeRetriever(evidence()), reranker, EvidencePolicy(None), SlowGenerator())
+        service.prepare()
+        self.assertEqual(reranker.prepares, 1)
+        result = service.ask("问题")
+        self.assertGreaterEqual(result.timing["retrieval_seconds"], result.timing["recall_seconds"])
+        self.assertGreaterEqual(result.timing["retrieval_seconds"], result.timing["rerank_seconds"])
+        self.assertGreater(result.timing["generation_seconds"], result.timing["retrieval_seconds"])
+        self.assertGreater(result.timing["total_seconds"], result.timing["generation_seconds"])
+
     def test_threshold_none_allows_answer_and_marks_uncalibrated(self):
         """阈值为 None 时不硬拒答，但结果明确标记尚未校准。"""
         generator = FakeGenerator()
