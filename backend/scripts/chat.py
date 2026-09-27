@@ -79,6 +79,8 @@ def main():
             if not result.answerable:
                 if result.evidence_status == "no_candidates":
                     print(f"\n拒答: {result.answer}（没有检索候选）\n")
+                elif result.reason == "generation_refused":
+                    print(f"\n拒答: {result.answer}（生成模型判断资料不足）\n")
                 else:
                     print(f"\n拒答: {result.answer}（相关性不足）\n")
                 continue

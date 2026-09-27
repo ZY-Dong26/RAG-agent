@@ -28,12 +28,13 @@ class FakeReranker:
 
 
 class FakeGenerator:
-    def __init__(self):
+    def __init__(self, answer="测试回答"):
         self.calls = []
+        self.answer = answer
 
     def generate(self, question, hits):
         self.calls.append((question, hits))
-        return "测试回答"
+        return self.answer
 
 
 def evidence():
@@ -78,6 +79,17 @@ class RAGServiceTests(unittest.TestCase):
         self.assertFalse(result.threshold_calibrated)
         self.assertEqual(result.reason, "threshold_not_calibrated")
         self.assertEqual(result.answer, "测试回答")
+        self.assertEqual(len(generator.calls), 1)
+
+    def test_model_refusal_after_evidence_gate_is_final_refusal(self):
+        """重排候选通过后，模型拒答仍是最终拒答；尾随引用编号不影响判断。"""
+        generator = FakeGenerator("资料中没有找到相关内容。\n\n[1][2][3]")
+        service = RAGService(FakeRetriever(evidence()), FakeReranker(), EvidencePolicy(None), generator)
+        result = service.ask("资料范围外的问题")
+        self.assertFalse(result.answerable)
+        self.assertEqual(result.reason, "generation_refused")
+        self.assertEqual(result.evidence_status, "answerable")
+        self.assertFalse(result.threshold_calibrated)
         self.assertEqual(len(generator.calls), 1)
 
     def test_empty_retrieval_rejects_without_generator(self):

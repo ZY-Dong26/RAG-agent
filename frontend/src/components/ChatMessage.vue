@@ -2,17 +2,12 @@
 // ChatMessage.vue —— 展示一条用户消息或助手消息。
 // 助手消息的 pending/error/成功状态互斥；成功时可展开最终引用与分项耗时。
 import { computed, ref } from 'vue'
-import { marked } from 'marked'
-import markedKatex from 'marked-katex-extension'
-import DOMPurify from 'dompurify'
+import { renderCitation, renderMarkdown } from '../lib/render.js'
 import {
   AlertCircle, BookOpen, Check, ChevronDown, Clock3, Copy, FileText,
 } from '@lucide/vue'
 
-// nonStandard 允许 $...$ 紧贴中文；公式先转 HTML，再与普通 Markdown 一起清理。
-marked.use(markedKatex({ throwOnError: false, nonStandard: true }))
-
-// message 由 App.vue 创建。成功响应包含 text、citations、timing 和 thresholdCalibrated。
+// message 由 App.vue 创建。成功响应包含最终 answerable、引用、耗时和阈值校准状态。
 const props = defineProps({
   message: { type: Object, required: true },
 })
@@ -21,11 +16,9 @@ const sourcesOpen = ref(false)
 const timingOpen = ref(false)
 const copied = ref(false)
 
-// v-html 只接收清理后的内容，不能把云端模型生成的原始 HTML 直接插入页面。
-const renderedAnswer = computed(() => {
-  const html = marked.parse(props.message.text || '', { breaks: true, gfm: true })
-  return DOMPurify.sanitize(html)
-})
+// 两处 v-html 都来自 render.js，统一完成公式渲染和 HTML 清理。
+const renderedAnswer = computed(() => renderMarkdown(props.message.text))
+const renderedCitations = computed(() => (props.message.citations || []).map(item => renderCitation(item.text)))
 
 function seconds(value) {
   return typeof value === 'number' ? value.toFixed(2) + ' 秒' : '—'
@@ -71,7 +64,8 @@ async function copyAnswer() {
       <template v-else>
         <div class="answer-content" v-html="renderedAnswer"></div>
 
-        <p v-if="message.citations?.length && !message.thresholdCalibrated" class="calibration-note">
+        <!-- LLM 已拒答时不再显示“未执行分数硬拒答”，避免和最终拒答文案冲突。 -->
+        <p v-if="message.answerable && message.citations?.length && !message.thresholdCalibrated" class="calibration-note">
           重排拒答阈值尚未校准，本轮没有执行分数硬拒答。
         </p>
 
@@ -106,8 +100,8 @@ async function copyAnswer() {
               <ChevronDown :size="14" class="source-chevron" />
             </summary>
             <div class="source-detail">
-              <p>{{ citation.text }}</p>
-              <span v-if="citation.rerank_score != null">重排分数 {{ score(citation.rerank_score) }}</span>
+              <div class="citation-content" v-html="renderedCitations[index]"></div>
+              <span v-if="citation.rerank_score != null" class="source-score">重排分数 {{ score(citation.rerank_score) }}</span>
             </div>
           </details>
         </div>

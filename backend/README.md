@@ -1,13 +1,13 @@
 # 后端工程
 
-`backend/` 是 Python 工程，负责 PDF 解析、规则后处理、建库、检索、重排、证据门控、云端回答和评测工具。根目录 [项目总览](../README.md) 说明完整使用流程；[前端说明](../frontend/README.md) 说明 Vue 页面。
+`backend/` 是 Python 工程，负责 PDF 解析、规则后处理、建库、检索、重排、证据门控、云端回答、SQLite 聊天记录和评测工具。根目录 [项目总览](../README.md) 说明完整使用流程；[前端说明](../frontend/README.md) 说明 Vue 页面。
 
 ~~~text
 backend/
 ├── scripts/          # 命令行与 FastAPI 启动入口
 ├── src/
 │   ├── rag_agent/     # RAG 核心业务
-│   ├── api/           # HTTP 适配层
+│   ├── api/           # HTTP 适配层及独立的 SQLite 聊天记录层
 │   └── devtools/      # 评测、判分与诊断实现
 ├── tests/            # 使用假模型与临时目录的离线测试
 ├── data/             # 原始 PDF、缓存、索引和评测结果
@@ -95,7 +95,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 .\.venv\Scripts\python.exe scripts/serve_api.py
 ```
 
-访问 `http://127.0.0.1:8000/docs` 查看 `GET /api/v1/status` 与 `POST /api/v1/ask`。Vue 前端已接入这两个接口，每次只发送当前问题，不传页面上的对话历史；页面启动和渲染流程见 [前端说明](../frontend/README.md)。命令行问答入口仍可单独使用。
+访问 `http://127.0.0.1:8000/docs` 查看 `GET /api/v1/status`、`POST /api/v1/ask` 和会话列表、详情、删除接口。Vue 前端每次只发送当前问题和 `conversation_id`，不传页面上的对话历史；首次成功问答后才创建会话。记录保存在被 Git 忽略的 `data/chat_history.sqlite3`，路径与保留规则见 [数据目录说明](data/README.md)。页面启动和渲染流程见 [前端说明](../frontend/README.md)。命令行问答入口仍可单独使用，其问答不会写入网页聊天历史。
 
 已有索引且前后端依赖准备好时，也可以在项目根目录运行 [start.ps1](../start.ps1) 同时启动 API 和前端。
 
@@ -113,6 +113,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 - **混合召回**：Dense 与 BM25 各取 30 条，按稳定 `chunk_id` 去重后使用等权 RRF 融合为 20 条，再由 BGE 重排取前 5 条。BM25 使用 `jieba.lcut_for_search()`，同时保留英文缩写、型号、版本号、年份和百分比。
 - **RRF 原因**：余弦相似度与 BM25 分数不在同一量纲，不能直接相加；RRF 只组合各路排名，默认公式为 `weight / (60 + rank)`。
 - **拒答阈值**：默认 `RERANK_REJECT_THRESHOLD=None`，表示尚未校准，不会凭经验硬拒答。应使用项目评测集统计可回答/不可回答问题的 Top-1 `rerank_score` 分布后再设置阈值；sigmoid 分数只是单调映射，不是真实概率。
+- **两阶段拒答**：证据门控通过后，回答模型仍可能按提示词回复“资料中没有找到相关内容”。API 的 `evidence_status` 保留检索阶段状态，`answerable` 表示最终是否回答；模型拒答时 `reason` 为 `generation_refused`，页面不再显示阈值未校准提示。
 - **索引保护**：每代同时保存并回读验证 FAISS、BM25 和 chunk ID 顺序，全部通过后才切换活动版本；历史索引和解析缓存不会自动删除。正式索引在 `data/vector_db/`，数据保留规则见 [数据目录说明](data/README.md)。
 - **评测与判分**：结果写入 `data/outputs/`。跑评测、纯本地导出、裁判判分三个入口相互独立；已有批次可再用独立裁判模型按正确性、完整性和相关性判分，详见 [运行入口说明](scripts/README.md) 第 4–6 节。
 - **当前边界**：聊天各轮独立检索，没有多轮历史；检索指标不等于答案正确率。离线测试验证程序行为，真实解析质量与回答效果仍需人工验收。

@@ -1,8 +1,8 @@
 """
 app.py —— FastAPI 应用入口
 
-启动时只构造一次 RAGService，并在接收请求前加载索引、Embedding 和重排器。
-路由仅转换 HTTP 数据；命令行入口与 API 均调用 qa.service，不复制检索或生成规则。
+启动时建立本机聊天表、构造一次 RAGService，并在接收请求前加载索引和模型。
+API 层负责 HTTP 与聊天记录；命令行和 API 均调用 qa.service，不复制检索或生成规则。
 """
 import logging
 from contextlib import asynccontextmanager
@@ -10,7 +10,8 @@ from threading import Lock
 
 from fastapi import FastAPI
 
-from api.routes import chat, status
+from api.chat_history import ChatHistory, DEFAULT_HISTORY_PATH
+from api.routes import chat, conversations, status
 
 logger = logging.getLogger("api")
 
@@ -21,14 +22,16 @@ def _default_service_factory():
     return RAGService()
 
 
-def create_app(service_factory=None) -> FastAPI:
-    """创建应用；测试可注入假服务，不加载真实模型或访问云端。"""
+def create_app(service_factory=None, history_path=DEFAULT_HISTORY_PATH) -> FastAPI:
+    """创建应用；测试可注入假服务和临时 SQLite 路径，不访问云端或正式数据。"""
     factory = service_factory or _default_service_factory
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        """一次性准备模型；关闭时移除引用，让进程释放本地资源。"""
+        """先建聊天表，再一次性准备模型；关闭时释放本地资源。"""
         try:
+            history = ChatHistory(history_path)
+            history.initialize()
             service = factory()
             service.prepare()
         except Exception as error:
@@ -36,19 +39,23 @@ def create_app(service_factory=None) -> FastAPI:
             logger.error("RAG 服务初始化失败：%s；请检查索引、模型、密钥与设备", type(error).__name__)
             raise RuntimeError("RAG 服务初始化失败；请检查后端配置和日志") from None
         app.state.service = service
+        app.state.history = history
         app.state.ready = True
         try:
             yield
         finally:
             app.state.ready = False
             app.state.service = None
+            app.state.history = None
 
     app = FastAPI(title="RAG Agent API", lifespan=lifespan)
     app.state.service = None
+    app.state.history = None
     app.state.ready = False
     app.state.ask_lock = Lock()
     app.include_router(status.router, prefix="/api/v1")
     app.include_router(chat.router, prefix="/api/v1")
+    app.include_router(conversations.router, prefix="/api/v1")
     return app
 
 

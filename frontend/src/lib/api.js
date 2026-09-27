@@ -23,6 +23,9 @@ async function request(path, options = {}) {
     if (response.status === 422) {
       throw new Error('问题不能为空，且不能超过 2000 个字符。')
     }
+    if (response.status === 404) {
+      throw new Error('会话不存在，可能已被删除。请刷新会话列表。')
+    }
     throw new Error(typeof data.detail === 'string' ? data.detail : '请求失败，请稍后重试。')
   }
   return data
@@ -33,11 +36,25 @@ export function getStatus() {
   return request('/api/v1/status')
 }
 
-/** 单轮提问：只发送当前 question；引用和耗时由后端统一返回。 */
-export function askQuestion(question) {
+/** 单轮提问：conversation_id 只用于归档；不会把历史消息发送给模型。 */
+export function askQuestion(question, conversationId = null) {
   return request('/api/v1/ask', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, conversation_id: conversationId }),
   })
+}
+
+/** 页面启动时获取摘要；点击会话后再按 ID 获取消息快照。 */
+export function listConversations() {
+  return request('/api/v1/conversations')
+}
+
+export function getConversation(id) {
+  return request(`/api/v1/conversations/${encodeURIComponent(id)}`)
+}
+
+/** 只删除聊天记录，后端不会触碰知识库和索引。 */
+export function deleteConversation(id) {
+  return request(`/api/v1/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }

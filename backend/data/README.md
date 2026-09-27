@@ -2,6 +2,7 @@
 
 ```text
 data/
+├── chat_history.sqlite3     # 本机聊天记录，Git 忽略；首次启动 API 时创建
 ├── raw/                     # 原始 PDF，不随意删除
 ├── processed/               # 解析缓存、统一文本、切块和建库报告
 │   └── mineru/              # 云端原始结果与任务恢复记录
@@ -17,6 +18,7 @@ data/
 - 以下相对路径均以 `backend/` 为基准。核心源码位于 `src/rag_agent/`，日常入口位于 `scripts/`；所有运行入口位于 `scripts/`，辅助实现位于 `src/devtools/`。
 - 评测输入不会参与知识库构建；不要将参考答案放到 `raw/`。
 - `processed/mineru/` 用于避免重复上传；删除后可能需要再次使用云端解析。
+- `chat_history.sqlite3` 仅保存会话标题、消息正文，以及回答当时的引用片段、耗时和拒答状态快照；不保存密钥、模型对象或整份 PDF。删除该文件会丢失全部聊天记录，但不影响知识库和索引。
 - 删除 `vector_db/` 后需要重新建库；目录迁移时保留的既有索引仍在这里。
 - `vector_db/document_artifacts/<artifact_key>/manifest.json` 的 `chunking_report` 是每份文档的切块审计统计；`chunks.json` 可核对章节前缀、页码和来源块 ID。
 - `outputs/` 不是运行知识库的必要输入，但删除评测结果会丢失断点恢复与效果对比依据。

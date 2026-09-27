@@ -40,7 +40,7 @@ scripts/
 ```
 
 无参数。启动时先加载并预热 BGE 重排模型，显示“已就绪”后再输入问题。逐题执行 Dense/BM25 → RRF → BGE 重排 → 证据门控 → 云端生成；
-拒答时不会调用回答模型。输入 `exit`/`quit`/`q`/`退出` 或 Ctrl+C 结束。
+证据门控直接拒答时不会调用回答模型；证据通过后，回答模型仍可能判断资料不足而拒答。输入 `exit`/`quit`/`q`/`退出` 或 Ctrl+C 结束。
 重新建库后需重启本入口才会加载新索引。
 
 ### 本机 Web API：serve_api.py
@@ -49,7 +49,7 @@ scripts/
 .\.venv\Scripts\python.exe scripts/serve_api.py
 ```
 
-服务监听 `http://127.0.0.1:8000`，启动时一次性加载索引、Embedding 并预热 BGE；成功后可访问 `/docs` 查看接口。`GET /api/v1/status` 只读返回就绪状态、向量数量和重排设备；`POST /api/v1/ask` 接收 `{"question":"你的问题"}`，返回答案、引用、证据门控状态与召回/重排/生成耗时。提问会调用已配置的云端回答模型；状态查询不会。当前单进程一次处理一条问答，忙碌时返回 HTTP 429；请勿用多个 worker 重复加载 GPU 模型。Vue 前端通过 Vite 的 `/api` 代理调用此接口；前端启动方法见根目录 README。
+服务监听 `http://127.0.0.1:8000`，启动时创建本机 SQLite 聊天表、加载索引和 Embedding 并预热 BGE；成功后可访问 `/docs` 查看接口。`GET /api/v1/status` 只读返回就绪状态、向量数量和重排设备；`POST /api/v1/ask` 接收 `{"question":"你的问题","conversation_id":null}`，首次成功问答后创建会话并返回其 ID，后续提问携带该 ID。列表、详情和删除分别使用 `GET /api/v1/conversations`、`GET /api/v1/conversations/{id}`、`DELETE /api/v1/conversations/{id}`。提问会调用已配置的云端回答模型；状态和历史读取不会。当前单进程一次处理一条问答，忙碌时返回 HTTP 429；请勿用多个 worker 重复加载 GPU 模型。Vue 前端通过 Vite 的 `/api` 代理调用此接口；前端启动方法见根目录 README。
 
 若日志显示 `APIConnectionError`，且检索与重排已完成，先检查云端模型连接。Windows 系统代理不可用时，可在 `backend/.env` 设置 `LLM_TRUST_ENV=false` 让回答模型直连；修改后重启 API。
 

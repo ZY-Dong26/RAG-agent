@@ -152,23 +152,26 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus
 .conversation-item {
   display: flex;
   align-items: center;
-  gap: 10px;
   width: 100%;
   min-height: 37px;
-  padding: 7px 10px;
   margin-bottom: 3px;
-  border: 0;
   border-radius: 9px;
   background: transparent;
   color: var(--text-secondary);
   font-size: 12px;
-  text-align: left;
 }
-.conversation-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.conversation-item svg { flex: 0 0 auto; opacity: .75; }
+.conversation-open { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 8px 10px; border: 0; background: transparent; color: inherit; text-align: left; font-size: inherit; }
+.conversation-open span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-open svg { flex: 0 0 auto; opacity: .75; }
+.conversation-delete { width: 29px; height: 29px; flex: 0 0 auto; display: grid; place-items: center; margin-right: 4px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--text-muted); opacity: 0; }
+.conversation-item:hover .conversation-delete, .conversation-delete:focus-visible { opacity: 1; }
+.conversation-delete:hover { background: var(--surface); color: #b14b41; }
+@media (hover: none) { .conversation-delete { opacity: 1; } }
 .conversation-item:hover { background: var(--surface-hover); color: var(--text); }
 .conversation-item.active { color: var(--text); background: var(--surface-hover); font-weight: 600; }
 .no-search-results { padding: 4px 11px; font-size: 12px; color: var(--text-muted); }
+.history-error { display: flex; flex-direction: column; gap: 5px; margin: 0 8px 9px; color: #b14b41; font-size: 11px; line-height: 1.4; }
+.history-error button { align-self: flex-start; padding: 0; border: 0; background: transparent; color: inherit; text-decoration: underline; }
 .sidebar-bottom { padding: 10px 12px 16px; border-top: 1px solid var(--line); }
 .library-card {
   display: flex;
@@ -215,6 +218,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus
 
 /* 欢迎页与消息列表共用内容宽度，长回答只让消息区域滚动。 */
 .messages-viewport { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
+.history-loading { padding: 36px; color: var(--text-muted); font-size: 12px; text-align: center; }
 .welcome { width: min(840px, calc(100% - 56px)); min-height: 100%; margin: 0 auto; padding: 20px 0 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .welcome-mark { width: 54px; height: 54px; border-radius: 18px; box-shadow: 0 10px 24px rgba(41,75,58,.16); }
 .welcome-eyebrow { margin: 27px 0 8px; color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .17em; }
@@ -291,8 +295,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus
 .source-chevron { flex: 0 0 auto; color: var(--text-muted); transition: transform .15s ease; }
 .source-item[open] .source-chevron { transform: rotate(180deg); }
 .source-detail { padding: 0 14px 13px 43px; color: var(--text-secondary); font-size: 11px; line-height: 1.65; }
-.source-detail p { margin: 0 0 8px; white-space: pre-wrap; }
-.source-detail span { color: var(--text-muted); }
+.citation-content { margin: 0 0 8px; overflow-wrap: anywhere; }
+.citation-content > :first-child { margin-top: 0; }
+.citation-content > :last-child { margin-bottom: 0; }
+.citation-content p { margin: 0 0 8px; white-space: pre-wrap; }
+.citation-content .katex-display { max-width: 100%; margin: 10px 0; overflow-x: auto; overflow-y: hidden; }
+.citation-content pre, .citation-content table { max-width: 100%; overflow-x: auto; }
+.source-score { color: var(--text-muted); }
 .timing-panel { padding: 9px 14px; }
 .timing-panel > div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; color: var(--text-secondary); font-size: 11px; }
 .timing-panel strong { color: var(--text); font-weight: 600; }

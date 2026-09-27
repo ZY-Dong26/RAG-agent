@@ -107,7 +107,8 @@ def main():
         try:
             result = _ask(question, service, generator, args.open)
             if not result.answerable:
-                print(f"拒答: {result.answer}（{result.evidence_status}）\n")
+                cause = "生成模型判断资料不足" if result.reason == "generation_refused" else result.evidence_status
+                print(f"拒答: {result.answer}（{cause}）\n")
                 continue
             print(f"\n回答: {result.answer}\n\n引用来源:")
             for hit in result.hits:

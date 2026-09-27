@@ -5,6 +5,7 @@ service.py —— 命令行与 FastAPI 共用的问答应用服务
 两种入口共用一套检索和生成规则，不在路由中复制业务流程。
 """
 from dataclasses import dataclass
+import re
 from time import perf_counter
 
 from rag_agent.common.progress import report, stage
@@ -15,9 +16,13 @@ from rag_agent.qa.reranker import Reranker
 from rag_agent.qa.retriever import Retriever
 
 
+# 生成模型可能在约定的拒答句后追加引用编号；仅匹配整段拒答，避免把正文中的引用误判为拒答。
+GENERATION_REFUSAL = re.compile(r"^资料中没有找到相关内容[。.!！]?(?:\s*\[\d+\])*\s*$")
+
+
 @dataclass(frozen=True)
 class AnswerResult:
-    """一次问答的答案、证据门控状态和各阶段耗时；计时不包含启动时的模型预加载。"""
+    """一次问答的最终可回答状态、证据门控状态和耗时；计时不含模型预加载。"""
     answer: str | None
     hits: list
     answerable: bool
@@ -47,7 +52,7 @@ class RAGService:
             report(f"[重排模型] 运行设备：{self.reranker.device}")
 
     def ask(self, question):
-        """完成一次单轮问答，并把召回、重排和生成分别计时；拒答不调用 LLM。"""
+        """完成单轮问答并分别计时；证据门控拒答时不调用 LLM。"""
         started = perf_counter()
         with stage("Dense 与 BM25 召回及 RRF 融合"):
             phase_started = perf_counter()
@@ -89,8 +94,12 @@ class RAGService:
             answer = self.generator.generate(question, hits)
             timing["generation_seconds"] = perf_counter() - phase_started
         timing["total_seconds"] = perf_counter() - started
+        # 证据门控只决定是否调用 LLM；LLM 仍可能判断片段不足以回答。
+        # 保留 evidence_status=answerable 以说明检索阶段已通过，answerable 表示最终回答状态。
+        generation_refused = bool(GENERATION_REFUSAL.fullmatch(answer))
         return AnswerResult(
-            answer=answer, hits=hits, answerable=True,
-            reason=decision.reason, evidence_status=decision.status,
+            answer=answer, hits=hits, answerable=not generation_refused,
+            reason="generation_refused" if generation_refused else decision.reason,
+            evidence_status=decision.status,
             threshold_calibrated=decision.threshold_calibrated, timing=timing,
         )

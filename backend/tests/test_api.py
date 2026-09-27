@@ -1,5 +1,6 @@
 """FastAPI 适配层离线测试：假服务替代模型和云端客户端。"""
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -41,6 +42,14 @@ class FakeService:
 
 
 class ApiTests(unittest.TestCase):
+    def setUp(self):
+        """所有 API 测试使用临时 SQLite 文件，不写 backend/data/ 正式聊天记录。"""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.history_path = Path(self.temp_dir.name) / "chat.sqlite3"
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
     def test_startup_status_and_ask_reuse_one_service(self):
         """启动只预热一次；接口返回公开引用和各阶段耗时。"""
         service = FakeService()
@@ -49,7 +58,7 @@ class ApiTests(unittest.TestCase):
             calls.append(True)
             return service
 
-        app = create_app(factory)
+        app = create_app(factory, history_path=self.history_path)
         with TestClient(app) as client:
             status = client.get("/api/v1/status")
             self.assertEqual(status.status_code, 200)
@@ -62,6 +71,7 @@ class ApiTests(unittest.TestCase):
             data = response.json()
             self.assertEqual(service.questions, ["问题"])
             self.assertEqual(data["answer"], "回答[1]")
+            self.assertTrue(data["conversation_id"])
             self.assertEqual(data["citations"][0]["source"], "a.pdf")
             self.assertEqual(data["citations"][0]["rank"], 1)
             self.assertNotIn("internal_path", data["citations"][0])
@@ -72,7 +82,7 @@ class ApiTests(unittest.TestCase):
     def test_blank_question_busy_and_error_are_safe(self):
         """无效输入不调用服务；忙碌与模型错误不泄漏内部异常。"""
         service = FakeService()
-        app = create_app(lambda: service)
+        app = create_app(lambda: service, history_path=self.history_path)
         with TestClient(app) as client:
             self.assertEqual(client.post("/api/v1/ask", json={"question": "   "}).status_code, 422)
             self.assertEqual(service.questions, [])
@@ -87,12 +97,79 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(failed.status_code, 500)
             self.assertNotIn("secret-token", failed.text)
             self.assertNotIn("https://private.example", failed.text)
+            self.assertEqual(client.get("/api/v1/conversations").json(), [])
+
+    def test_history_survives_app_restart_and_delete_cascades(self):
+        """首问创建、同会话续问、重建应用后读取快照，以及删除后的 404。"""
+        first_service = FakeService()
+        with TestClient(create_app(lambda: first_service, history_path=self.history_path)) as client:
+            first = client.post("/api/v1/ask", json={"question": "第一题"}).json()
+            conversation_id = first["conversation_id"]
+            second = client.post("/api/v1/ask", json={
+                "question": "第二题", "conversation_id": conversation_id,
+            }).json()
+            self.assertEqual(second["conversation_id"], conversation_id)
+            summaries = client.get("/api/v1/conversations").json()
+            self.assertEqual(len(summaries), 1)
+            self.assertEqual(summaries[0]["title"], "第一题")
+
+        # 新应用实例模拟页面刷新和后端重启，读取同一临时数据库。
+        with TestClient(create_app(FakeService, history_path=self.history_path)) as client:
+            detail = client.get(f"/api/v1/conversations/{conversation_id}")
+            self.assertEqual(detail.status_code, 200)
+            messages = detail.json()["messages"]
+            self.assertEqual([message["role"] for message in messages],
+                             ["user", "assistant", "user", "assistant"])
+            self.assertEqual(messages[0]["text"], "第一题")
+            self.assertIsNone(messages[0]["citations"])
+            self.assertEqual(messages[1]["citations"][0]["source"], "a.pdf")
+            self.assertEqual(messages[1]["timing"]["rerank_seconds"], .2)
+            self.assertFalse(messages[1]["threshold_calibrated"])
+            self.assertEqual(client.delete(f"/api/v1/conversations/{conversation_id}").status_code, 204)
+            self.assertEqual(client.get("/api/v1/conversations").json(), [])
+            self.assertEqual(client.get(f"/api/v1/conversations/{conversation_id}").status_code, 404)
+            self.assertEqual(client.delete(f"/api/v1/conversations/{conversation_id}").status_code, 404)
+
+    def test_failed_ask_and_unknown_conversation_do_not_save_messages(self):
+        """模型失败不建空会话；旧会话失败不留下半组消息。"""
+        service = FakeService()
+        with TestClient(create_app(lambda: service, history_path=self.history_path)) as client:
+            unknown = client.post("/api/v1/ask", json={
+                "question": "问题", "conversation_id": "missing",
+            })
+            self.assertEqual(unknown.status_code, 404)
+            self.assertEqual(service.questions, [])
+            service.fail = True
+            self.assertEqual(client.post("/api/v1/ask", json={"question": "失败"}).status_code, 500)
+            self.assertEqual(client.get("/api/v1/conversations").json(), [])
+            service.fail = False
+            conversation_id = client.post("/api/v1/ask", json={"question": "成功"}).json()["conversation_id"]
+            service.fail = True
+            failed = client.post("/api/v1/ask", json={
+                "question": "第二轮失败", "conversation_id": conversation_id,
+            })
+            self.assertEqual(failed.status_code, 500)
+            messages = client.get(f"/api/v1/conversations/{conversation_id}").json()["messages"]
+            self.assertEqual(len(messages), 2)
+
+    def test_delete_waits_for_active_ask(self):
+        """删除与问答共用锁，忙碌时保留聊天记录并返回可重试状态。"""
+        with TestClient(create_app(FakeService, history_path=self.history_path)) as client:
+            conversation_id = client.post("/api/v1/ask", json={"question": "问题"}).json()["conversation_id"]
+            app = client.app
+            self.assertTrue(app.state.ask_lock.acquire(blocking=False))
+            try:
+                response = client.delete(f"/api/v1/conversations/{conversation_id}")
+                self.assertEqual(response.status_code, 429)
+            finally:
+                app.state.ask_lock.release()
+            self.assertEqual(len(client.get("/api/v1/conversations").json()), 1)
 
     def test_startup_failure_does_not_expose_exception(self):
         """初始化失败不接收请求，也不输出异常原文。"""
         def factory():
             raise RuntimeError("secret-token")
-        app = create_app(factory)
+        app = create_app(factory, history_path=self.history_path)
         with self.assertRaisesRegex(RuntimeError, "RAG 服务初始化失败"):
             with TestClient(app):
                 pass

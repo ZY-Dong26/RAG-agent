@@ -53,6 +53,9 @@ coverage.xml
 /backend/data/vector_db/*
 !/backend/data/vector_db/.gitkeep
 
+# 本机聊天历史及 SQLite 临时日志，不随源码或知识库索引提交
+/backend/data/chat_history.sqlite3*
+
 # 运行日志与操作系统生成的辅助文件
 *.log
 .DS_Store

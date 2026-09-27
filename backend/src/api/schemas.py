@@ -8,9 +8,10 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class AskRequest(BaseModel):
-    """单轮提问；当前问答不读取浏览器显示的历史消息。"""
+    """单轮提问；会话 ID 只用于存储归属，不把历史消息交给 RAG 模型。"""
 
     question: str = Field(min_length=1, max_length=2000)
+    conversation_id: str | None = None
 
     @field_validator("question")
     @classmethod
@@ -44,15 +45,46 @@ class Timing(BaseModel):
 
 
 class AskResponse(BaseModel):
-    """一次问答的答案、门控状态、引用和耗时。"""
+    """一次问答的最终答案状态、检索门控状态、引用和耗时。"""
 
+    conversation_id: str
     answer: str | None
-    answerable: bool
-    reason: str | None
-    evidence_status: str
+    answerable: bool  # 最终是否回答；LLM 在证据通过后仍可能拒答
+    reason: str | None  # generation_refused 表示生成模型拒答
+    evidence_status: str  # 仅表示检索证据门控，不代表最终回答
     threshold_calibrated: bool
     citations: list[Citation]
     timing: Timing
+
+
+class ConversationSummary(BaseModel):
+    """侧栏所需的会话信息；列表接口不传输消息正文。"""
+
+    id: str
+    title: str
+    created_at: str
+    updated_at: str
+
+
+class StoredMessage(BaseModel):
+    """历史消息；用户消息没有回答快照，助手消息保存当轮最终结果。"""
+
+    id: int
+    role: str
+    text: str
+    created_at: str
+    answerable: bool | None = None
+    reason: str | None = None
+    evidence_status: str | None = None
+    threshold_calibrated: bool | None = None
+    citations: list[Citation] | None = None
+    timing: Timing | None = None
+
+
+class ConversationDetail(ConversationSummary):
+    """打开旧会话时一次返回按保存顺序排列的消息。"""
+
+    messages: list[StoredMessage]
 
 
 class StatusResponse(BaseModel):

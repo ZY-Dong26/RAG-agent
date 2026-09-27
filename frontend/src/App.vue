@@ -1,34 +1,46 @@
 <script setup>
-// App.vue —— 单页问答界面：管理本页会话、服务状态和输入框。
-// 对话只在内存中保存；向后端提交时只发送当前问题，不发送页面上的历史消息。
+// App.vue —— 管理持久会话列表、当前消息、服务状态和输入框。
+// 后端保存问答快照；模型仍只接收当前问题，不读取页面上的历史消息。
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   ArrowUp, BookOpen, Database, FileText, Moon, PanelLeftClose,
-  PanelLeftOpen, Search, Sparkles, SquarePen, Sun,
+  PanelLeftOpen, Search, Sparkles, SquarePen, Sun, Trash2,
 } from '@lucide/vue'
 import ChatMessage from './components/ChatMessage.vue'
-import { askQuestion, getStatus } from './lib/api.js'
+import {
+  askQuestion, deleteConversation as deleteSavedConversation, getConversation,
+  getStatus, listConversations,
+} from './lib/api.js'
 
-// 会话列表是当前页面的展示状态；刷新后重新创建空会话。
+// 列表来自 SQLite；未发送成功的新对话仅在 draftMessages 中暂存，不产生空记录。
 const conversations = ref([])
 const activeId = ref(null)
+const draftMessages = ref([])
 const draft = ref('')
 const search = ref('')
 const sending = ref(false)
+const historyLoading = ref(false)
+const historyLoaded = ref(false)
+const conversationLoading = ref(false)
+const historyError = ref('')
+const deletingId = ref(null)
+let historyRequestId = 0
 // status 来自 GET /api/v1/status。ready 只表示本地模型与索引已加载。
 const status = ref(null)
 const statusError = ref('')
 const statusLoading = ref(false)
 const sidebarCollapsed = ref(false)
 const mobileSidebarOpen = ref(false)
-// 只有主题偏好写入 localStorage，问题与回答不会持久化。
+// 只有主题偏好写入浏览器 localStorage；问答内容由后端 SQLite 保存。
 const darkMode = ref(localStorage.getItem('rag-agent-theme') === 'dark')
 const messagesViewport = ref(null)
 const composerInput = ref(null)
 let statusTimer
 
 const activeConversation = computed(() => conversations.value.find(item => item.id === activeId.value))
-const activeMessages = computed(() => activeConversation.value?.messages ?? [])
+const activeMessages = computed(() => activeId.value
+  ? (activeConversation.value?.messages ?? [])
+  : draftMessages.value)
 const isReady = computed(() => Boolean(status.value?.ready))
 const filteredConversations = computed(() =>
   conversations.value.filter(item => item.title.toLowerCase().includes(search.value.trim().toLowerCase()))
@@ -51,31 +63,86 @@ watch(draft, async () => {
 
 watch(activeId, () => scrollToBottom())
 
-/** 创建空会话并返回它，供“新对话”和首次发送共用。 */
-function makeConversation() {
-  const conversation = {
-    id: crypto.randomUUID(),
-    title: '新对话',
-    messages: [],
-  }
-  conversations.value.unshift(conversation)
-  activeId.value = conversation.id
-  return conversation
-}
-
-/** 空会话不重复创建，避免用户连续点击时产生一串空白记录。 */
+/** 新对话只清空页面状态；首条问答成功后，后端才创建数据库会话。 */
 function newChat() {
-  if (!activeConversation.value || activeConversation.value.messages.length > 0) {
-    makeConversation()
-  }
+  if (sending.value) return
+  historyRequestId += 1
+  activeId.value = null
+  draftMessages.value = []
   draft.value = ''
+  historyError.value = ''
+  conversationLoading.value = false
   mobileSidebarOpen.value = false
   nextTick(() => composerInput.value?.focus())
 }
 
-function selectChat(id) {
+/** 点击历史会话时读取保存的消息快照；过期请求不能覆盖后选中的会话。 */
+async function selectChat(id) {
+  if (sending.value || deletingId.value) return
+  const conversation = conversations.value.find(item => item.id === id)
+  if (!conversation) return
+  const requestId = ++historyRequestId
   activeId.value = id
   mobileSidebarOpen.value = false
+  conversationLoading.value = true
+  historyError.value = ''
+  try {
+    const detail = await getConversation(id)
+    if (requestId !== historyRequestId) return
+    conversation.messages = detail.messages.map(message => ({
+      ...message,
+      citations: message.citations || [],
+      thresholdCalibrated: message.threshold_calibrated,
+    }))
+    await scrollToBottom()
+  } catch (error) {
+    if (requestId === historyRequestId) historyError.value = error.message
+  } finally {
+    if (requestId === historyRequestId) conversationLoading.value = false
+  }
+}
+
+/** 页面启动时加载会话摘要；有旧记录时打开最近一条。失败可在侧栏重试。 */
+async function loadHistory() {
+  historyLoading.value = true
+  historyError.value = ''
+  const requestId = historyRequestId
+  try {
+    const summaries = await listConversations()
+    historyLoaded.value = true
+    const cached = new Map(conversations.value.map(item => [item.id, item.messages]))
+    conversations.value = summaries.map(item => ({ ...item, messages: cached.get(item.id) ?? null }))
+    if (activeId.value && !conversations.value.some(item => item.id === activeId.value)) {
+      activeId.value = null
+      draftMessages.value = []
+    }
+    if (requestId === historyRequestId) {
+      if (activeId.value && !activeConversation.value?.messages) await selectChat(activeId.value)
+      else if (!activeId.value && !draftMessages.value.length && summaries.length) await selectChat(summaries[0].id)
+    }
+  } catch (error) {
+    historyLoaded.value = false
+    historyError.value = error.message
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+/** 删除历史会话前确认；删除范围仅限这条对话的数据库记录。 */
+async function removeChat(id) {
+  if (sending.value || deletingId.value) return
+  const item = conversations.value.find(conversation => conversation.id === id)
+  if (!item || !window.confirm(`删除对话“${item.title}”及其中的消息？`)) return
+  deletingId.value = id
+  try {
+    await deleteSavedConversation(id)
+    conversations.value = conversations.value.filter(conversation => conversation.id !== id)
+    if (activeId.value === id) newChat()
+  } catch (error) {
+    historyError.value = error.message
+  } finally {
+    deletingId.value = null
+  }
 }
 
 function setSuggestion(text) {
@@ -95,6 +162,8 @@ async function refreshStatus() {
   try {
     status.value = await getStatus()
     statusError.value = ''
+    // 前端可能早于后端模型加载完成；服务就绪后自动补读首次失败的历史列表。
+    if (status.value.ready && !historyLoaded.value && !historyLoading.value) loadHistory()
   } catch (error) {
     status.value = null
     statusError.value = error.message
@@ -105,33 +174,40 @@ async function refreshStatus() {
 
 /**
  * 发送一次单轮问答。先放入用户消息和等待占位，再请求 POST /api/v1/ask。
- * 输入是 draft 中的当前问题；成功时把答案、引用和耗时写回占位，失败时显示错误。
+ * 只发送当前问题和会话 ID；成功后后端已保存问答，失败仅在本页显示错误。
  */
 async function sendQuestion() {
   const question = draft.value.trim()
-  if (!question || sending.value || !isReady.value || question.length > 2000) return
-
-  const conversation = activeConversation.value ?? makeConversation()
-  if (conversation.messages.length === 0) {
-    conversation.title = question.length > 29 ? question.slice(0, 29) + '…' : question
-  }
+  if (!question || sending.value || conversationLoading.value || !isReady.value || question.length > 2000) return
+  const conversationId = activeId.value
+  const messages = conversationId ? activeConversation.value?.messages : draftMessages.value
+  if (!messages) return
 
   // 后端响应可能较慢，先渲染消息与等待状态；sending 同时防止重复提交。
-  conversation.messages.push({ id: crypto.randomUUID(), role: 'user', text: question })
-  conversation.messages.push({ id: crypto.randomUUID(), role: 'assistant', text: '', pending: true })
-  const reply = conversation.messages[conversation.messages.length - 1]
+  messages.push({ id: crypto.randomUUID(), role: 'user', text: question })
+  messages.push({ id: crypto.randomUUID(), role: 'assistant', text: '', pending: true })
+  const reply = messages[messages.length - 1]
   draft.value = ''
   sending.value = true
   await scrollToBottom()
 
   try {
-    const result = await askQuestion(question)
+    const result = await askQuestion(question, conversationId)
     reply.text = result.answer || '本轮没有返回回答。'
     reply.answerable = result.answerable
     reply.reason = result.reason
     reply.citations = result.citations || []
     reply.timing = result.timing
     reply.thresholdCalibrated = result.threshold_calibrated
+    if (!conversationId) {
+      const title = question.length > 29 ? question.slice(0, 29) + '…' : question
+      conversations.value.unshift({ id: result.conversation_id, title, messages })
+      activeId.value = result.conversation_id
+      draftMessages.value = []
+    } else {
+      const index = conversations.value.findIndex(item => item.id === conversationId)
+      if (index > 0) conversations.value.unshift(conversations.value.splice(index, 1)[0])
+    }
   } catch (error) {
     reply.error = error.message
     if (error.message.includes('连接后端')) refreshStatus()
@@ -158,7 +234,7 @@ function toggleSidebar() {
 }
 
 onMounted(() => {
-  makeConversation()
+  loadHistory()
   refreshStatus()
   // 状态查询只读，不触发云端 LLM；定时检查便于后端重启后自动恢复输入。
   statusTimer = window.setInterval(refreshStatus, 30000)
@@ -176,7 +252,7 @@ const suggestions = [
 
 <template>
   <div class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
-    <!-- 侧栏只保存本页的会话标题和消息；列表搜索不会请求后端。 -->
+    <!-- 侧栏展示后端保存的会话摘要；搜索只筛选本地已加载的标题。 -->
     <div v-if="mobileSidebarOpen" class="mobile-overlay" @click="mobileSidebarOpen = false"></div>
 
     <aside class="sidebar" :class="{ 'mobile-open': mobileSidebarOpen }">
@@ -191,7 +267,7 @@ const suggestions = [
       </div>
 
       <div class="sidebar-main">
-        <button class="new-chat-button" type="button" @click="newChat">
+        <button class="new-chat-button" type="button" :disabled="sending" @click="newChat">
           <SquarePen :size="18" />
           <span>新对话</span>
           <span class="new-chat-plus">＋</span>
@@ -203,17 +279,29 @@ const suggestions = [
         </label>
 
         <div class="sidebar-section-heading">
-          <span>本页对话</span>
+          <span>历史对话</span>
           <span>{{ conversations.length }}</span>
         </div>
-        <nav class="conversation-list" aria-label="本页对话">
-          <button v-for="conversation in filteredConversations" :key="conversation.id"
-                  class="conversation-item" :class="{ active: conversation.id === activeId }"
-                  type="button" @click="selectChat(conversation.id)">
-            <BookOpen :size="16" />
-            <span>{{ conversation.title }}</span>
-          </button>
-          <p v-if="filteredConversations.length === 0" class="no-search-results">没有匹配的对话</p>
+        <div v-if="historyError" class="history-error" role="alert">
+          <span>{{ historyError }}</span>
+          <button type="button" @click="loadHistory">重试</button>
+        </div>
+        <nav class="conversation-list" aria-label="历史对话">
+          <div v-for="conversation in filteredConversations" :key="conversation.id"
+               class="conversation-item" :class="{ active: conversation.id === activeId }">
+            <button class="conversation-open" type="button" :disabled="sending"
+                    @click="selectChat(conversation.id)" :title="conversation.title">
+              <BookOpen :size="16" />
+              <span>{{ conversation.title }}</span>
+            </button>
+            <button class="conversation-delete" type="button" :disabled="sending || deletingId === conversation.id"
+                    :aria-label="`删除对话：${conversation.title}`" title="删除对话"
+                    @click="removeChat(conversation.id)">
+              <Trash2 :size="14" />
+            </button>
+          </div>
+          <p v-if="historyLoading" class="no-search-results">正在加载历史对话…</p>
+          <p v-else-if="filteredConversations.length === 0" class="no-search-results">{{ search ? '没有匹配的对话' : '暂无历史对话' }}</p>
         </nav>
       </div>
 
@@ -234,7 +322,7 @@ const suggestions = [
             <span>{{ darkMode ? '浅色外观' : '深色外观' }}</span>
           </button>
         </div>
-        <p class="sidebar-caption">对话仅在当前页面保留，刷新后会清空。</p>
+        <p class="sidebar-caption">对话保存在本机，刷新后可以重新打开。</p>
       </div>
     </aside>
 
@@ -258,7 +346,8 @@ const suggestions = [
       </header>
 
       <div ref="messagesViewport" class="messages-viewport">
-        <div v-if="activeMessages.length === 0" class="welcome">
+        <div v-if="conversationLoading" class="history-loading" role="status">正在读取历史对话…</div>
+        <div v-else-if="activeMessages.length === 0" class="welcome">
           <div class="welcome-mark"><BookOpen :size="29" :stroke-width="1.8" /></div>
           <p class="welcome-eyebrow">YOUR KNOWLEDGE, ONE QUESTION AWAY</p>
           <h1>今天想了解什么？</h1>
@@ -289,7 +378,7 @@ const suggestions = [
         <div class="composer" :class="{ disabled: !isReady }">
           <textarea ref="composerInput" v-model="draft" rows="1" maxlength="2000"
                     :placeholder="isReady ? '询问你的知识库…' : '等待知识库连接…'"
-                    :disabled="!isReady || sending"
+                    :disabled="!isReady || sending || conversationLoading"
                     aria-label="输入问题"
                     @keydown="handleComposerKeydown"></textarea>
           <div class="composer-bottom">
@@ -300,7 +389,7 @@ const suggestions = [
             <div class="composer-right">
               <span v-if="draft.length > 1800" class="char-count">{{ draft.length }}/2000</span>
               <button class="send-button" type="button" title="发送问题"
-                      :disabled="!draft.trim() || sending || !isReady"
+                      :disabled="!draft.trim() || sending || conversationLoading || !isReady"
                       @click="sendQuestion">
                 <ArrowUp :size="18" :stroke-width="2.4" />
               </button>
