@@ -31,14 +31,15 @@ backend/
 ```powershell
 # 在 backend/ 目录执行；已有 backend/.venv 时跳过第一条
 py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install uv
+.\.venv\Scripts\uv.exe pip install --python .\.venv\Scripts\python.exe -r requirements.txt
 ```
 
 命令直接使用项目解释器，无需提前激活虚拟环境。启动脚本会设置 `src` 导入路径，无需额外安装项目包。
 不需要安装本地 MinerU 或下载其解析模型。依赖版本尚未在全新环境中验证。Windows + NVIDIA CUDA 12.8 环境可在安装依赖后替换为 GPU 版 PyTorch（本机 RTX 3060 已验证）：
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install --force-reinstall --no-deps torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+.\.venv\Scripts\uv.exe pip install --python .\.venv\Scripts\python.exe --reinstall --no-deps torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
 .\.venv\Scripts\python.exe -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 ```
 
@@ -59,7 +60,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 - `JUDGE_LLM_API_KEY`：可选的独立裁判模型密钥；同时配置 `JUDGE_LLM_BASE_URL` 和 `JUDGE_LLM_MODEL`。
 - `EMBEDDING_MODEL`：本地向量模型目录，默认 `model/Qwen3-Embedding-0.6B`。
 - `RERANKER_MODEL`：本地重排模型目录，默认 `model/bge-reranker-v2-m3`。
-- `LLM_TRUST_ENV`：是否让回答模型客户端读取系统代理等环境设置；系统代理无法连接模型服务时可设为 `false` 直连，修改后需重启问答入口。
+- `LLM_TRUST_ENV`：可选；需要直连时自行在 `.env` 中添加 `LLM_TRUST_ENV=false`，修改后需重启问答入口。
 
 其他参数的含义见 [.env.example](.env.example)，不在这里重复配置清单。
 两个服务使用不同的密钥变量；系统中的同名环境变量优先。真实 `backend/.env` 被 Git 忽略。

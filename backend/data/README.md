@@ -15,7 +15,7 @@ data/
 
 - 以下相对路径均以 `backend/` 为基准。核心源码位于 `src/rag_agent/`，日常入口位于 `scripts/`；所有运行入口位于 `scripts/`，辅助实现位于 `src/devtools/`。
 - 评测输入不会参与知识库构建；不要将参考答案放到 `raw/`。
-- `evaluation/testdata.json` 保存题目、参考答案与评分标准；`evaluation/testdata_sources.json` 保存文档编号和 PDF 文件名的映射。
+- `evaluation/test_dataset.json` 保留新测评集原稿；从中转换的 `evaluation/testdata.json` 保存 100 道题、参考答案、原文证据和评分标准，供默认批量评测入口读取。`evaluation/testdata_sources.json` 保存文档编号和 PDF 文件名的映射。拒答题的来源表示相关资料，不表示该资料支持题目中的虚构前提。
 - 以上分类说明用途，不迁移现有目录。`raw/` 路径参与稳定文档 ID，`processed/` 和 `vector_db/` 含可复用缓存及索引；`chat_history.sqlite3` 保留现有会话。纯源码整理无需重建索引。
 - `processed/mineru/` 用于避免重复上传；删除后可能需要再次使用云端解析。
 - `chat_history.sqlite3` 仅保存会话标题、消息正文，以及回答当时的引用片段、耗时和拒答状态快照；不保存密钥、模型对象或整份 PDF。删除该文件会丢失全部聊天记录，但不影响知识库和索引。

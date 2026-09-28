@@ -1,0 +1,1204 @@
+[
+  {
+    "question_id": 1,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "在 DPR（Dense Passage Retrieval）神经检索器中，基于 MS MARCO 数据集评估时，其 MRR@10 指标达到了多少？相比传统 BM25 提升了多少？",
+    "ground_truth": "DPR 在 MS MARCO 数据集上的 MRR@10 达到 0.338，较传统 BM25 提升了 15.1%。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 3.2.1 节：“在 MS MARCO 数据集上，DPR 的 MRR@10 达到 0.338，较 BM25 提升 15.1%。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 2,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "根据中国信通院《基准测试报告》，截止到 2023 年底，产学研各界报道的大模型基准测试成果总共有多少个？其中通用语言类数据集占比是多少？",
+    "ground_truth": "截止到 2023 年底，共报道 325 个大模型基准测试相关研究成果；其中针对大模型的通用语言类评测数据集最多，占比超过 50%（53%）。",
+    "context_evidence": "《基准测试报告.pdf》“二、蓬勃发展的大模型基准测试”：“截至到 2023 年底，产学研各界已经报道 325 个大模型基准测试的相关数据集……针对大模型的通用语言类评测数据集最多，占比超过 50%。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 3,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "什么是 Prefill-Decode（PD）分离架构？预填阶段和解码阶段分别属于哪种计算/资源密集型任务？",
+    "ground_truth": "PD 分离架构将大模型推理过程解耦拆分为预填（Prefill）与解码（Decode）两个独立阶段。预填阶段属于计算密集型（compute-bound），解码阶段属于存储密集型（memory-bound）。",
+    "context_evidence": "《推理优化报告.pdf》“系统层面 - 1.PD分离架构”：“预填充-解码（Prefill-Decode，PD）分离式推理架构……预填充阶段是计算密集型（compute-bound）对算力需求高……解码阶段是存储密集型（memory-bound）对显存需求高”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 4,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "阿里巴巴《大模型训练数据白皮书》中指出，根据 Hugging Face 社区数据统计，中文开源数据集数量在英文开源数据集中的占比是多少？",
+    "ground_truth": "中文开源数据集数量仅占英文开源数据集的 11%。",
+    "context_evidence": "《数据白皮书.pdf》“第 4.4 节”：“据 AI 应用开放社区 Hugging Face 数据统计，中文开源数据集数量仅占英文开源的 11%。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 5,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "xRAG 上下文压缩技术采用了什么方法？它能将文档压缩多少倍，计算量降至多少？",
+    "ground_truth": "xRAG 采用模态融合技术，将文档密集嵌入向量投影至语言模型表示空间，以单标记（1 Token）替代全文，实现 178 倍压缩，计算量降至 1/3.53。",
+    "context_evidence": "《RAG综述.pdf》第 2.3 节：“xRAG采用模态融合技术，将文档密集嵌入向量投影至语言模型表示空间，以单标记替代全文，实现178倍压缩……计算量降至1/3.53”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 6,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "根据中国信通院数据，仅 2023 年一年出现的大模型基准测试数据集数量是多少？相比之前 5 年的总和如何？",
+    "ground_truth": "仅 2023 年一年出现的大模型基准测试数据集数量就达到 209 个，远远超过之前 5 年的总和。",
+    "context_evidence": "《基准测试报告.pdf》图 3 描述：“仅 2023 年一年出现的大模型基准测试数据集的数量远远超过之前 5 年，达到 209 个。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 7,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "2022 年全球数据库市场规模突破了多少亿美元？其中云数据库的市场份额占比是多少？",
+    "ground_truth": "2022 年全球数据库市场规模突破 910 亿美元，其中云数据库市场占比首次突破 50%（达到 55%）。",
+    "context_evidence": "《数据库技术.pdf》“3.1 全球数据库产业发展”：“2022 年市场规模突破 910 亿美元……2022 年全球云数据库市场占比首次突破 50%。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 8,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "在常用的通用能力大模型基准测试中，MMLU 数据集共包含多少道测试题目？",
+    "ground_truth": "MMLU 数据集的题目数量为 15858 道。",
+    "context_evidence": "《基准测试报告.pdf》“一、大模型基准测试发展现状”：“例如 MMLU 和 C-Eval 的题目数量分别为 15858 和 13948。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 9,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "作为中文大模型通用能力评估代表，C-Eval 基准测试数据集包含多少道测试题目？",
+    "ground_truth": "C-Eval 数据集的题目数量为 13948 道。",
+    "context_evidence": "《基准测试报告.pdf》“一、大模型基准测试发展现状”：“例如 MMLU 和 C-Eval 的题目数量分别为 15858 和 13948。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 10,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "推理引擎 vLLM 借鉴了操作系统的什么机制提出了 PagedAttention 技术？采用该技术后并发请求数提升了多少？",
+    "ground_truth": "vLLM 借鉴了操作系统虚拟内存分页机制提出了 PagedAttention，将 KV Cache 划分为固定大小的逻辑页并映射至非连续物理显存，使相同硬件下的并发请求数提升 3 倍以上。",
+    "context_evidence": "《推理优化报告.pdf》“引擎层面 - 1.显存优化”：“PagedAttention 技术借鉴操作系统虚拟内存分页机制，将 KV Cache 划分为固定大小的逻辑页……实验表明 vLLM 采用该技术后在相同硬件下可支持的并发请求数提升 3 倍以上。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 11,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "月之暗面等发布的开源项目 Mooncake 在 Kimi 大模型实现生产级规模落地时，承接了多少比例的线上流量？吞吐量较基线提升了多少？",
+    "ground_truth": "Mooncake 在 Kimi 大模型生产级规模落地中承接了 80% 以上的线上流量，系统有效吞吐量较基线方案提升 75%（长上下文场景最高提升 525%）。",
+    "context_evidence": "《推理优化报告.pdf》“Mooncake 架构方案”：“该方案已在 Kimi 大模型实现生产级规模落地，承接其 80% 以上的线上流量，可缓现在真实工作负载下，系统有效吞吐量较基线方案提升 75%……吞吐量最高提升 525%。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 12,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "由由卡塔尔计算研究所提出的开源大模型基准测试评测工具名称是什么？",
+    "ground_truth": "由卡塔尔计算研究所提出的开源大模型基准测试评测工具名称是 LLMeBench。",
+    "context_evidence": "《基准测试报告.pdf》图 9 描述：“图 9 展示了由卡塔尔计算研究所所提出的开源大模型基准测试评测工具 LLMeBench 原理图。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 13,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "HRS-Bench 评测体系由哪家机构于 2023 年推出？它重点评测大模型的多少种技能，覆盖了多少个场景？",
+    "ground_truth": "HRS-Bench 由沙特的 KAUST 于 2023 年推出，重点评测大模型的 13 种技能（分为准确率、鲁棒性、泛化性、公平性和偏见 5 个类别），覆盖了 50 多个场景。",
+    "context_evidence": "《基准测试报告.pdf》“3. HRS-Bench”：“HRS-Bench 是由沙特的 KAUST 在 2023 年推出的……重点评测大模型的 13 种技能，可分为准确率、鲁棒性、泛化性、公平性和偏见 5 个类别，覆盖了包括动物、交通、食物、时尚等 50 多个场景。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 14,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "OpenCompass（司南）是由哪家机构推出的开源大模型评测体系？它包含了哪些核心组件？",
+    "ground_truth": "OpenCompass（司南）是由上海 AI 实验室推出的开源评测体系，包含评测工具 CompassKit、数据集社区 CompassHub 和评测榜单 CompassRank。",
+    "context_evidence": "《基准测试报告.pdf》“4. OpenCompass”：“OpenCompass（司南）是由上海 AI 实验室推出的开源、高效、全面的评测大模型体系及开放平台，其包括评测工具 CompassKit、数据集社区 CompassHub 和评测榜单 CompassRank。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 15,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "FlagEval（天秤）大模型评测体系由哪家机构推出？它构建了怎样的三维评测框架？",
+    "ground_truth": "FlagEval（天秤）由北京智源研究院推出，构建了“能力-任务-指标”三维评测框架。",
+    "context_evidence": "《基准测试报告.pdf》“5. FlagEval”：“FlagEval（天秤）是由北京智源研究院推出的大模型评测体系……通过构建‘能力-任务-指标’三维评测框架，细粒度刻画基础模型的认知能力边界。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 16,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "SuperCLUE 综合性评测基准是由哪个团队提出的？",
+    "ground_truth": "SuperCLUE 是由 ChineseCLUE 团队提出的针对中文大模型的通用、综合性评测基准。",
+    "context_evidence": "《基准测试报告.pdf》“6. SuperCLUE”：“SuperCLUE 是由 ChineseCLUE 团队提出的一个针对中文大模型的通用、综合性评测基准。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 17,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "主流开源向量数据库 Milvus 由哪家公司主导开发？其官方提供的托管云服务名称是什么？",
+    "ground_truth": "Milvus 由 Zilliz 公司主导开发，其官方托管云服务名称为 Zilliz Cloud。",
+    "context_evidence": "《数据库技术.pdf》“表 1 全球主流向量数据库产品”：“Milvus | 开源 | 所属/主导公司：Zilliz | 托管服务产品：Zilliz Cloud”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 18,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "在向量数据库产品中，Pinecone 是开源还是闭源产品？其托管服务版本是什么？",
+    "ground_truth": "Pinecone 属于闭源向量数据库，其托管服务产品为 Pinecone 2.0。",
+    "context_evidence": "《数据库技术.pdf》“表 1 全球主流向量数据库产品”：“Pinecone | 闭源 | 所属/主导公司：Pinecone | 托管服务产品：Pinecone 2.0”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 19,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "传统关系型数据库 PostgreSQL 主要是通过哪个扩展模块来新增对向量数据类型的支持？",
+    "ground_truth": "PostgreSQL 是通过 Pgvector 扩展模块来支持向量数据类型的。",
+    "context_evidence": "《数据库技术.pdf》“表 2 主流数据产品支持向量数据类型情况”：“PostgreSQL | 扩展支持模块：Pgvector”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 20,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "连续批处理（Continuous Batching）在应对请求序列长度差异巨大时，采用了什么调度机制？",
+    "ground_truth": "连续批处理采用了迭代级调度（iteration-level scheduling）机制，在每轮迭代中动态决定批次大小，请求一旦完成生成便立即从批次中移除并加入新请求。",
+    "context_evidence": "《推理优化报告.pdf》“引擎层面 - 4.批调度优化”：“连续批处理（Continuous Batching）采用迭代级调度，在每轮迭代中动态决定批次大小，请求一旦完成生成便立即从批次中移除，并动态地将等待队列中的新请求加入批次。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 21,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "DeepSeek-V2 提出了哪种新型注意力机制，通过引入低秩压缩机制来显著压缩 KV Cache？",
+    "ground_truth": "DeepSeek-V2 提出了多潜在注意力（Multi-head Latent Attention, MLA）机制。",
+    "context_evidence": "《推理优化报告.pdf》“模型层面 - 3.算法优化”：“DeepSeek-V2 提出多潜在注意力（Multi-head Latent Attention, MLA），进一步引入低秩压缩机制，在保留各头独立权重的同时显著压缩 KV Cache。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 22,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "投机采样（Speculative Decoding）通过草稿生成与目标模型验证的并行路径，在小批量场景下可将推理延迟降低多少？",
+    "ground_truth": "投机采样在小批量场景下可将推理延迟降低约 2-3 倍。",
+    "context_evidence": "《推理优化报告.pdf》“模型层面 - 3.算法优化”：“投机采样（Speculative Decoding）……其在小批量场景下可将延迟降低约 2-3 倍。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 23,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "阿里巴巴“通义千问”大模型在预训练阶段，其训练数据主要来自于哪些语言的公开混合数据？中文语料主要源自何处？",
+    "ground_truth": "通义千问训练数据主要来自以中文和英文为主的公开混合数据；中文语料主要来自于知乎、百度百科、百度知道等公开网络数据。",
+    "context_evidence": "《数据白皮书.pdf》“第 4.4 节”：“以阿里巴巴的‘通义千问’大模型为例，训练数据来自公开来源的混合数据，以中文和英文为主。而中文语料主要来自知乎、百度百科、百度知道等公开网络数据。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 24,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "阿里巴巴达摩院在推出面向东南亚语言的大模型 SeaLLM 时，其预训练第一阶段只保留了哪些语言的文档？",
+    "ground_truth": "预训练第一阶段基于语言识别工具，只保留了英语、中文、泰语、越南语和印尼语（英、中、泰、越、印尼）5 种语言的文档。",
+    "context_evidence": "《数据白皮书.pdf》“第 4.7 节”：“基于 Llama-2 模型，在预训练第一阶段使用语言识别工具，只保留英、中、泰、越南、印尼语言的文档。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 25,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "在 SeaLLM 大模型的预训练第二阶段（持续预训练），筛选了哪些特定语言语料进行专项学习以扩展词汇量？",
+    "ground_truth": "第二阶段筛选了高棉语、老挝语、马来语、缅甸语等特定语料进行持续预训练和专项学习。",
+    "context_evidence": "《数据白皮书.pdf》“第 4.7 节”：“预训练第二阶段筛选高棉语、老挝语、马来语、缅甸语等特定语料专项学习，通过持续预训练来扩展词汇量。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 26,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "阿里白皮书指出，在大模型预训练阶段处理海量语料中的个人隐私信息时，常采取什么技术手段进行检测与清理？",
+    "ground_truth": "预训练阶段常采取“关键词 + 正则表达式匹配”的方式检测个人信息，然后执行删除或模糊化操作。",
+    "context_evidence": "《数据白皮书.pdf》“第 4.7 节”：“在实践中，由于预训练阶段语料数量巨大，常采取‘关键词 + 正则表达式匹配’的方式检测个人信息，然后执行删除或者模糊化操作。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 27,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "微软 GraphRAG 框架在 Podcast 数据集上的生成表现中，其答案的“全面性”与“多样性”胜率较基础 RAG 提升了多少？",
+    "ground_truth": "GraphRAG 在 Podcast 数据集上全面性与多样性胜率分别达到 83% 和 82%，较基础 RAG 提升超过 30%。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 3.4.1 节：“Graph RAG 通过社区检测算法提升全局摘要效果，在 Podcast 数据集上全面性与多样性胜率达 83% 和 82%，较基础 RAG 提升超 30%。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 28,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "GraphRAG 框架生成 C0 层社区摘要时，其 Token 成本仅为处理全文的百分之多少？",
+    "ground_truth": "C0 层摘要 Token 成本仅为全文的 2.5%。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 3.4.1 节：“C0 层摘要 token 成本仅为全文的 2.5%，实现显著性能提升与资源节省。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 29,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "由微软团队提出的 LLMLingua 提示压缩方法，在数学推理、复杂推理、对话和摘要 4 个任务中最高实现了多少倍的压缩率？",
+    "ground_truth": "LLMLingua 在上述任务中最高实现了 20 倍的提示压缩率，且性能损失极小。",
+    "context_evidence": "《RAG综述.pdf》第 2.3 节：“实验表明，该方法在数学推理、复杂推理、对话和摘要 4 个任务中实现了最高 20 倍的压缩率，且性能损失极小。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 30,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "Blended RAG 融合检索方法在 Natural Questions（NQ）零样本（Zero-shot）设置下的 Exact Match（EM）得分达到了多少？",
+    "ground_truth": "Blended RAG 在 NQ 零样本设置下的 EM 得分达到了 42.63%。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 3.3.3 节：“Blended RAG 融合 BM25、DPR 与稀疏编码器检索，在 NQ 零样本设置下 EM 达 42.63%，显著优于单一检索与大模型基线。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 31,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "带有自我反思机制的 Self-RAG 框架在 PopQA 和 PubHealth 数据集上的答案准确率分别达到了多少？",
+    "ground_truth": "Self-RAG 在 PopQA 上的准确率达到 55.8%，在 PubHealth 上的准确率达到 73.5%。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 4.1 节：“Self-RAG 通过自反思和反思标记评估输出，在 PopQA 和 PubHealth 任务中准确率分别达 55.8% 和 73.5%。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 32,
+    "question_type": "事实型",
+    "difficulty": "困难",
+    "question": "TELERAG 分布式推理优化方案在 HotpotQA、NQ 和 TriviaQA 数据集上，端到端推理延迟平均降低了多少？加速比达到多少？",
+    "ground_truth": "端到端推理延迟平均降低约 41.9%，加速比达到 1.72 倍。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 3.4.2 节：“实验表明，TELERAG 在 HotpotQA、NQ 和 TriviaQA 数据集上，端到端推理延迟平均降低约 41.9%（加速比 1.72 倍）。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 33,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "中国信通院“方升”大模型基准测试体系在 2024 年初启动的首轮测评中，共选取了多少家国内外主流大模型？闭源与开源大模型的数量分别是多少？",
+    "ground_truth": "首轮测评共选取了 30 多家国内外主流大模型，其中包含 12 个闭源商业大模型和 18 个开源大模型。",
+    "context_evidence": "《基准测试报告.pdf》“三、‘方升’大模型基准测试体系实践”：“被测对象为 30 多家国内外主流的闭源（商业）大模型和开源大模型……其中闭源（商业）大模型 12 个，开源大模型 18 个。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 34,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "中国信通院“方升”大模型首轮测评的实际测试执行时间段是什么？",
+    "ground_truth": "实际测试执行时间段为 2024 年 2 月 19 日至 2 月 29 日。",
+    "context_evidence": "《基准测试报告.pdf》“三、‘方升’大模型基准测试体系实践”：“实际测试执行时间为 2 月 19 日至 2 月 29 日。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 35,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "“方升”大模型首轮综合测评题库共包含多少万条测试数据？测试题目的难易度分级比例（难、中等、简单）是多少？",
+    "ground_truth": "首轮综合测评题库包含 203 万条测试数据；题目难易度比例为：困难占 30%、中等占 40%、简单占 30%。",
+    "context_evidence": "《基准测试报告.pdf》“三、‘方升’大模型基准测试体系实践”：“综合测评题目从包含 203 万的评测数据库中定向抽取构建……从题目的难易度上来说，难题、中等题、简单题数目的比例为 30%、40% 和 30%。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 36,
+    "question_type": "事实型",
+    "difficulty": "中等",
+    "question": "中间件平台 PilotScop 预置了多少种 AI 算法？它能够将 AI 算法在数据库中的部署耗时缩短到多少？",
+    "ground_truth": "PilotScop 预置了 10 多种 AI 算法，能够使得 AI 算法在数小时甚至数分钟内实现在数据库中的“一键部署”。",
+    "context_evidence": "《数据库技术.pdf》“2.3 AI与数据库融合的创新实践”：“使得 AI 算法能够在数小时甚至数分钟内在数据库中实现‘一键部署’……预置了 10 多种 AI 算法。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 37,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "OpenGauss 数据库中内置的提供自动运维能力（如慢 SQL 根因分析、索引推荐等）的子模块名称是什么？",
+    "ground_truth": "OpenGauss 数据库内置的自动运维子模块名称为 DBMind。",
+    "context_evidence": "《数据库技术.pdf》“2.3 AI与数据库融合的创新实践”：“OpenGauss 数据库中内置 DBMind 子模块，为 OpenGauss 数据库提供了自动运维能力。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 38,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "根据中国信通院统计，在全球大模型基准测试数据集发布数量的国家分布中，美国和中国的占比分别是多少？",
+    "ground_truth": "美国和中国在发布数据集数量上旗鼓相当，占比均约为 47%（美国 47%，中国 46%）。",
+    "context_evidence": "《基准测试报告.pdf》“图 5 大模型基准测试数据集国家分布”：“中美发布数量旗鼓相当，占比均为 47% 左右（美国 47%，中国 46%）。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 39,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "根据《基准测试报告》，在大模型评测数据集开源状况统计中，开源数据集与闭源数据集的占比分别是多少？",
+    "ground_truth": "开源测试数据集占比为 69%，闭源数据集占比为 31%。",
+    "context_evidence": "《基准测试报告.pdf》“图 6 大模型基准测试数据集开源分布”：“开源测试数据集更多，占比达到 69%，而闭源数据集仅占 31%。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 40,
+    "question_type": "事实型",
+    "difficulty": "简单",
+    "question": "OpenAI 于 2025 年 10 月发布的首款 AI 原生浏览器名称是什么？其 RAG 功能的检索源有何特点？",
+    "ground_truth": "名称为 ChatGPT Atlas；它将用户当前打开的网页内容、浏览历史和选中的文本作为动态、实时的检索源。",
+    "context_evidence": "《RAG综述.pdf》第 3.2 节：“ChatGPTAtlas 是 OpenAI 于 2025 年 10 月发布的首款 AI 原生浏览器……将用户当前打开的网页内容、浏览历史和选中的文本作为动态、实时的检索源。”",
+    "eval_criteria": "依据参考答案核对实体、数值、单位和限定条件；关键事实均正确，不能编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 41,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "在处理超长文档与结构化知识检索时，RAPTOR 与 GraphRAG 分别采用了怎样的索引与检索机制？二者如何互补解决信息割裂问题？",
+    "ground_truth": "RAPTOR 采用递归聚类与层次化索引，通过自下而上的文本摘要解决长文本跨段落的上下文关联；GraphRAG 将非结构化文本转化为结构化知识图谱，通过实体与依赖边导航发现主题节点。二者互补可兼顾长文本的层级抽象与显式实体关系的多跳推演。",
+    "context_evidence": "《RAG综述.pdf》第 2.4 节：“GraphRAG将知识库转换为结构化的知识图谱……通过图结构的组织方式能够有效发现围绕某一主题或锚实体的知识片段”；《大语言模型检索增强生成技术综述.pdf》第 3.4.2 节：“RAPTOR 采用递归聚类与树状索引加速长文本检索。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC01",
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 42,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "在长上下文多文档问答场景下，LLM 面临什么注意力瓶颈？推理引擎层采用了什么 KV Cache 压缩算法来减轻显存压力？",
+    "ground_truth": "模型层面临“位置偏置”（倾向于关注前部文档）和注意力分散瓶颈；推理引擎层采用 MQA（共享一套 KV）、GQA（分组共享）以及 DeepSeek-V2 的 MLA（多潜在注意力低秩压缩）来解决 KV Cache 显存瓶颈。",
+    "context_evidence": "《RAG综述.pdf》第 3.5 节：“LLM 在处理多文档时存在显著的‘位置偏置’现象”；《推理优化报告.pdf》“算法优化”：“Transformer 的 KV Cache 成为解码（Decode）阶段显存消耗的主要瓶颈……MQA、GQA、DeepSeek-V2 提出多潜在注意力（MLA）进一步引入低秩压缩机制”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC01",
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 43,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "向量数据库如何支持海量非结构化数据的多维检索？AI 技术（AI for DB）又如何反哺传统数据库的 SQL 重写和 Join 顺序优化？",
+    "ground_truth": "向量数据库支持百亿级高维向量（数千至上万维）的最近邻相似性搜索；而 AI for DB 利用深度强化学习与蒙特卡洛树搜索（如 SkinnerDB）自动重写 SQL、去除冗余运算符并动态优化表连接（Join）顺序。",
+    "context_evidence": "《数据库技术.pdf》第 1.1 节：“向量数据库……支持文本、图像、音视频等数据嵌入处理，具备百亿条以上的超大规模数据管理能力……支持最近邻搜索算法”；第 2.1 节：“SkinnerDB 使用基于蒙特卡洛树搜索的方法……动态优化连接顺序”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 44,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "阿里白皮书中提到的“数据课程”（Data Curriculum）是如何安排语料学习顺序的？在东南亚大模型 SeaLLM 上有何具体实践？",
+    "ground_truth": "“数据课程”按照技能集合顺序（从基础到目标技能）安排语料。SeaLLM 预训练第一阶段保留英、中、泰、越、印尼语文档，第二阶段筛选高棉语、老挝语、马来语、缅甸语进行持续预训练以扩展词汇量。",
+    "context_evidence": "《数据白皮书.pdf》“第 4.7 节”：“在语料学习顺序中进行了‘数据课程’的设计……SeaLLM……预训练第一阶段只保留英、中、泰、越南、印尼语言；预训练第二阶段筛选高棉语、老挝语、马来语、缅甸语等特定语料专项学习”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 45,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "相比传统 MoE 架构，DeepSeekMoE 与 Step-3 在结构解耦上分别做出了哪些降低推理开销的创新？",
+    "ground_truth": "DeepSeekMoE 通过细粒度专家分割（大专家拆分为小专家）与共享专家参数降低单次推理开销；Step-3 架构则引入 AF 分离（Attention 与 FFN 物理解耦）与多矩阵分解注意力（MFA），降低 KV 缓存和计算量。",
+    "context_evidence": "《推理优化报告.pdf》“MoE 架构”：“DeepSeekMoE……将专家划分为多层子专家结构，通过共享专家参数与跨专家融合……降低显存占用”；“Step-3 架构”：“提出多矩阵分解注意力（MFA）……提出注意力-前馈网络解耦（AFD/AF分离）架构”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 46,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "预填阶段的分块预填充（Chunked-Prefills）与解码阶段的连续批处理（Continuous Batching）如何协同提升 PD 分离架构的推理效率？",
+    "ground_truth": "Chunked-Prefills 将长输入序列拆分为较小块按顺序处理，使预填计算与后续解码重叠；连续批处理在解码阶段进行迭代级动态调度。二者协同避免了预填阻塞与解码等待，实现吞吐量与首 Token 延迟的最优平衡。",
+    "context_evidence": "《推理优化报告.pdf》“Chunked-Prefills”：“将长输入序列分割为多个较小块按顺序处理……平衡了显存使用与计算效率”；“连续批处理”：“采用迭代级调度，动态移除已完成请求并加入新请求”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 47,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "PagedAttention 分页机制与 Prefix Caching 前缀缓存技术在推理引擎中是如何协同解决显存浪费和重复计算问题的？",
+    "ground_truth": "PagedAttention 通过逻辑页映射解决显存碎片与预分配浪费；Prefix Caching（如 RadixAttention）在此基础上识别并缓存共享提示词/历史对话的前缀 KV Cache，避免重复计算并提升并发能力。",
+    "context_evidence": "《推理优化报告.pdf》“1.显存优化”：“PagedAttention 将 KV Cache 划分为固定大小逻辑页实现按需分配……Prefix Caching 通过识别并缓存系统提示词、历史对话等共享前缀的 KV Cache 避免重复计算。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 48,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "Mooncake 架构如何利用“HBM-DRAM-SSD”三级动态存储体系实现 KV Cache 的分级管理与跨节点复用？",
+    "ground_truth": "Mooncake 将高频访问的“极热”KV Cache 驻留于 HBM，中低频“热/温”数据下沉至 DRAM 与 SSD 外存；利用 Conductor 全局调度器按最长可重用前缀路由请求，并通过 RDMA 实现跨节点低延迟缓存传输与复用。",
+    "context_evidence": "《推理优化报告.pdf》“Mooncake 架构”：“建立了 HBM-DRAM-SSD 三级动态存储架构……高频访问的 KV Cache 优先驻留 HBM，历史缓存与低频数据动态下沉……结合 RDMA 实现高效流转与前缀复用。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 49,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "从检索机制看，稀疏检索（BM25）、密集检索（DPR）与生成式检索（GR）是如何演进的？各自在表示空间上有何本质不同？",
+    "ground_truth": "BM25 基于倒排索引与统计词频（高维稀疏）；DPR 基于双塔神经网络将文本映射至低维稠密向量空间进行近邻匹配；GR 则摒弃显示索引，通过 Seq2Seq 模型直接生成文档标识符，实现端到端参数化检索。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 3.2 节：“稀疏检索依赖关键词匹配……密集检索编码为稠密向量近似最近邻匹配……生成式检索通过序列到序列模型直接生成文档标识符。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 50,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "Self-RAG、Adaptive-RAG 与 FLARE 在自适应/动态检索中的触发机制有何区别？",
+    "ground_truth": "Self-RAG 通过离线训练的反思标记（Retrieval Tokens）按需触发；Adaptive-RAG 根据小模型评估的问题复杂度选择检索策略；FLARE 则在生成过程中监测置信度，当生成低置信度词时主动触发检索。",
+    "context_evidence": "《RAG综述.pdf》第 2.2 节：“Self-RAG 引入自我反思机制生成反思标记；Adaptive-RAG 通过问题复杂度动态选择；FLARE 通过边生成边检索”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 51,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "LLMLingua 提示词压缩框架中的预算控制器、词级压缩与分布对齐三个模块如何协同完成长上下文压缩？",
+    "ground_truth": "预算控制器动态分配各部分压缩比例以维持语义结构；迭代式词级压缩算法利用词间依赖删除冗余词；分布对齐算法通过指令微调缩小心模型与目标 LLM 的概率分布差异，确保压缩后信息仍可被准确理解。",
+    "context_evidence": "《RAG综述.pdf》第 2.3 节：“1) 预算控制器动态分配比例；2) 迭代式词级压缩算法保留关键词；3) 基于指令微调的分布对齐方法缩小心模型与目标 LLM 差距。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 52,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "KAG 框架如何通过无模式提取与有模式约束结合，实现图结构与原始文本块的双向索引和逻辑推理？",
+    "ground_truth": "KAG 提出兼容无模式信息提取（实体/事件）与有模式专家知识构建的表示框架；通过图结构与原始文本块的双向索引，在检索时将自然语言转化为逻辑形式，并在推理阶段融合离线图谱与在线文本进行语义对齐。",
+    "context_evidence": "《RAG综述.pdf》第 2.4 节：“KAG 支持无模式信息提取和有模式约束构建……支持图结构和原始文本块之间的双向索引表示……将自然语言转换为逻辑形式引导求解。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 53,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "在防止 RAG 幻觉方面，置信度监测（如 CtrlA/WeKnow-RAG）与自反思生成（如 Self-RAG）的技术路径有何本质区别？",
+    "ground_truth": "置信度监测基于模型生成logits状态或自评概率，当置信度低时主动外挂检索补充信息；自反思生成则通过离线学习反思标记，在生成过程中实时自我评估与批判答案的引用相关度及事实一致性。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 4.1 节：“CtrlA/WeKnow-RAG 通过内在概率置信度监测触发检索；Self-RAG 通过自反思标记评估输出事实准确性。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 54,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "“方升”基准测试体系如何通过“全量筛选、动态更新与灵活抽样”三大自适应动态测试机制解决大模型“刷榜”与“记忆题目”问题？",
+    "ground_truth": "1) 标签化全量筛选实现题目精确画像；2) 动态测试数据库引入题目演进与定期补充，确保每次测试题目不同；3) 高质量抽样算法通过函数优化选择未公开题目，避免模型刷榜和记忆。",
+    "context_evidence": "《基准测试报告.pdf》“（二）‘方升’自适应动态测试方法”：“包含测试数据标签化管理、动态测试数据库和高质量测试数据抽样算法……解决存在题目封闭、考题过时、模型刷榜等问题。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 55,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "“方升”测试体系中的指标体系、测试方法、测试数据集与测试工具四个关键要素之间是如何相互支撑的？",
+    "ground_truth": "指标体系规定评测维度与标准；测试方法（如动态抽样）提供精细化评估规程；测试数据集（203万题库）提供支撑素材；测试工具（如FactTesting）实现自动化全流程执行，四者共同保障客观公正。",
+    "context_evidence": "《基准测试报告.pdf》“三、‘方升’大模型基准测试体系框架”：“包含评测指标体系、测试方法、测试数据集和测试工具四个关键要素……四者协同保障大模型评测的公正性与科学性。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 56,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "为什么使用传统关系型数据库存储数千至上万维度的向量数据会导致表臃肿，而向量数据库是如何解决这一难题的？",
+    "ground_truth": "关系型数据库基于元组行/列存储，高维向量会导致列数爆炸、表极度臃肿且无法建立高效索引；向量数据库通过专属向量数据结构、降维与高维最近邻（ANN）搜索算法实现百亿级高效管理。",
+    "context_evidence": "《数据库技术.pdf》第 1.1 节：“向量数据的维度达到数千、上万维度，使用传统关系型数据库会造成表臃肿……向量数据库响应超大规模检索，支持面向向量的最近邻搜索算法。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 57,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "GPU 加速型数据库与 GPU 内存型数据库在架构设计、数据驻留位置及性能瓶颈上有何不同？",
+    "ground_truth": "加速型数据库将 GPU 作为 CPU 协处理器，数据在 CPU 与 GPU 间频繁传输，瓶颈在于 PCIe/IO 通道；GPU 内存型数据库将数据全部驻留于 GPU 显存，极尽释放 GPU 计算性能，瓶颈在于昂贵的显存容量。",
+    "context_evidence": "《数据库技术.pdf》第 1.2 节：“加速型数据库数据通过 PCIe 从 CPU 送到 GPU，瓶颈是 PCIe/IO 通道；内存型数据库数据全部驻留 GPU 内存，突破性能瓶颈。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 58,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "传统 DBA 经验优化在代价估计和 Join 顺序选择上有何局限？AI 技术（如 SkinnerDB）是如何突破这一局限的？",
+    "ground_truth": "传统方法基于静态统计与规则，无法捕捉跨列/跨表复杂相关性，调优依赖人工；SkinnerDB 利用蒙特卡洛树搜索（MCTS）与强化学习，在每个时间片尝试不同连接顺序并依据执行反馈动态优化选择。",
+    "context_evidence": "《数据库技术.pdf》第 2.1 节：“经验技术无法捕获不同列/表间的复杂相关性……SkinnerDB 使用基于蒙特卡洛树搜索的方法在每个时间片中尝试不同连接顺序并动态优化。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 59,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "在“数据库赋能 AI”（DB for AI）方向上，扩展 SQL 语言与库内模型训练/推理优化解决了传统 AI 开发中的哪些痛点？",
+    "ground_truth": "解决了传统 Python/R 开发需繁琐定义执行逻辑、以及数据在数据库与 AI 框架间高成本频繁导入导出的痛点，实现了直接使用 SQL 驱动原生 AI 算子和库内高性能模型推理。",
+    "context_evidence": "《数据库技术.pdf》第 2.2 节：“传统机器学习数据导入/导出成本极高……扩展 SQL 支持库内 AI 模型操作与算子，实现库内高效计算推断。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 60,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "预训练、SFT（监督微调）与 RLHF（人类反馈强化学习）三个阶段对训练数据的要求（规模与特征）是如何演变的？",
+    "ground_truth": "预训练阶段需海量、多样化的广域数据（特征为“大”）；SFT 阶段需高质量人工设计问答例题以提升泛化（特征为“齐”）；RLHF 阶段需人类评分打分进行价值观对齐（特征为高质量“齐”）。",
+    "context_evidence": "《数据白皮书.pdf》“第 2.2 节”：“第一阶段预训练语料特征为‘大’；第二阶段 SFT 与第三阶段 RLHF 需要高质量人类反馈，语料特征为‘齐’；行业大模型需要‘专’。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 61,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "阿里巴巴《数据白皮书》为什么提出“高质量数据不适合被前置客观标准定义”？其评判标准受到哪些因素影响？",
+    "ground_truth": "因为对高质量的判断属于主观且动态的过程，没有统一的上层标准；其标准取决于模型的应用目的，根据模型发展阶段“因时而动”、技术人员理解“因人而异”、训练效果“因效而定”。",
+    "context_evidence": "《数据白皮书.pdf》“第 3 节”：“高质量更多是一种主观判断，取决于应用目的，数据类型根据发展阶段‘因时而动’、技术人员理解‘因人而异’、训练效果‘因效而定’。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 62,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "在电商推荐场景中，利用合成数据与大模型结合进行精准推理与推荐的具体技术三步路径是什么？",
+    "ground_truth": "1) 提示词生成器根据上下文和用户需求构建定制提示词；2) 用合成数据通过高效的“提示词微调”优化预训练大模型；3) 利用微调后大模型的推理能力给出用户可理解的推荐理由。",
+    "context_evidence": "《数据白皮书.pdf》“第 4.7 节”：“第一，通过提示词生成器构建定制化提示词；第二，用合成数据通过‘提示词微调’优化大模型；第三，利用微调大模型的推理能力给出合理的推荐理由。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 63,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "传统“固定长度分块”存在什么缺陷？Late Chunking 与 MoG（混合粒度分块）分别是如何从全局编码与路由选择上解决该缺陷的？",
+    "ground_truth": "固定分块打断语义连贯性；Late Chunking 先对整体上下文编码生成全局向量，再在嵌入空间进行池化分块；MoG 则引入路由器模块，根据查询动态选择最优分块粒度。",
+    "context_evidence": "《RAG综述.pdf》第 2.1 节：“传统固定分块打断语义连贯；Late Chunking 先对整个上下文编码再在嵌入空间池化；MoG 引入路由器动态选择最优粒度。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 64,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "AMR-RAG 概念蒸馏算法如何利用语义图与深度优先搜索（DFS）减少长上下文中的冗余信息？",
+    "ground_truth": "AMR-RAG 将检索到的支持文档转换为语义图结构，通过 DFS 遍历图中的关键节点提取核心概念（如命名实体、时间），过滤冗余信息，将文档精炼为以知识为中心的表征。",
+    "context_evidence": "《RAG综述.pdf》第 2.3 节：“AMR-RAG 将支持文档转换成语义图结构，通过深度优先搜索（DFS）遍历关键节点提取核心概念，同时过滤冗余信息。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 65,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "密集段落检索方法 SIMLM 是如何通过“表示瓶颈”与“替换语言建模（Masked Reconstruct）”目标学习鲁棒文本向量的？",
+    "ground_truth": "SIMLM 由深层编码器和浅层解码器组成；先对输入段落进行随机掩码，编码器将其压缩至瓶颈向量，解码器仅依据瓶颈向量重构原始段落，迫使编码器将关键语义强行压缩至瓶颈中。",
+    "context_evidence": "《RAG综述.pdf》第 2.2 节：“SIMLM 采用表示瓶颈架构，由深层编码器和浅层解码器组成；先生成掩码段，解码器利用瓶颈向量重构原始段，迫使编码器压缩关键语义。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 66,
+    "question_type": "多跳推理",
+    "difficulty": "中等",
+    "question": "分布式索引（如 Milvus）与分层索引（如 RAPTOR）在应对海量文本检索时的设计哲学有何不同？",
+    "ground_truth": "分布式索引采用“空间换时间”的并行计算哲学，通过分片与多节点并行查询提升高并发吞吐量；分层索引采用“分治法”哲学，通过递归聚类与树状摘要降低复杂长文本的搜索复杂度。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 3.4.2 节：“分布式索引基于并行计算的‘空间换时间’原则提升吞吐量；分层索引借鉴分治法，通过层次分解优化复杂度。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 67,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "基于规则的重排序与基于模型的重排序（如 FiD-Light、W-RAG）在重排机制和适用场景上有何递进关系？",
+    "ground_truth": "基于规则方法计算高效、透明但语义能力弱，适合低资源时效场景；基于模型方法利用深度学习或 LLM 深度捕捉查询与文档的复杂语义交互，虽延迟略高但显著提升精细排序效果。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 3.5.1 节：“基于规则的重排序计算高效、透明；基于模型的重排序利用深度学习技术捕捉语义关系，提升排序精度。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 68,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "DeepSeek 系统在预填与解码阶段是如何通过“双微批次重叠执行（Double Micro-batching）”隐藏通信开销的？",
+    "ground_truth": "预填阶段将一个微批次的‘attention+MoE’与另一个微批次的‘dispatch+combine’重叠执行；解码阶段将一个微批次的‘attention’与另一个微批次的‘dispatch+MoE+combine’重叠执行，实现计算与通信并行掩盖。",
+    "context_evidence": "《推理优化报告.pdf》“DeepSeek 架构方案”：“提出双微批次重叠执行实现计算-通信重叠：预填阶段将 attention+MoE 与 dispatch+combine 重叠；解码阶段将 attention 与 dispatch+MoE+combine 重叠。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 69,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "在某金融清算机构案例中，针对会议纪要生成“推动”与“推得慢”痛点，采用了什么一体化解决方案？",
+    "ground_truth": "引入华为 AI 推理加速与存储优化方案；在舆情分析中将长文本分类知识库以 60KB KV Cache 形式提前预热驻留；在会议纪要场景采用 KV Cache 稀疏去噪技术压缩原始上下文，突破 32K 窗口限制。",
+    "context_evidence": "《推理优化报告.pdf》“金融领域案例”：“舆情分析系统中将长文本分类知识库提前预热至 KV Cache Pool 中存储，推理时延由 10 分钟降低至 10 秒；会议纪要场景采用 KV Cache 稀疏去噪技术进行上下文压缩。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 70,
+    "question_type": "多跳推理",
+    "difficulty": "困难",
+    "question": "某检察院案例中如何通过“以存换算”、KV Cache 分级存储与 RAG 知识库结合实现案卷分析效率突破？",
+    "ground_truth": "利用 AI 存储长记忆能力在推理中加载缓存避免重复计算；采用 KV Cache 缓存机制对卷宗分级存储；结合 RAG 实时更新法律条文与判例，最终实现 TTFT 降低 40%，吞吐量提升 5 倍。",
+    "context_evidence": "《推理优化报告.pdf》“检察业务案例”：“利用‘以存换算’避免重复计算；采用 KV Cache 缓存机制对长卷宗进行分级存储；引入 RAG 实时更新法律知识库；系统 TTFT 降低 40%，吞吐量提升 5 倍。”",
+    "eval_criteria": "完整覆盖参考答案所列事实及其推理关系；关键条件不能遗漏，不能编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 71,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "请对比 RAG 四类优化方法（分块优化、检索端改进、减少上下文输入、与知识图谱结合）在计算成本、推理延迟和主要适合任务上的差异。",
+    "ground_truth": "1) 分块优化：成本/延迟中等，适合长文档问答与技术手册解析；2) 检索端改进：成本/延迟较高，适合开放域问答与复杂推理；3) 减少上下文输入：成本/延迟较低，适合高并发与资源受限部署；4) 知识图谱结合：成本/延迟较高，适合多跳推理与专业领域问答。",
+    "context_evidence": "《RAG综述.pdf》“表 1 RAG方法对比分析”：分块优化（中等成本/延迟，适合长文档/技术手册）；检索端改进（较高成本/延迟，适合开放域/复杂推理）；减少上下文输入（较低成本/延迟，适合高并发/资源受限）；与知识图谱结合（较高成本/延迟，适合多跳推理/实体消歧）",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 72,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "总结《基准测试报告》中“方升”大模型基准测试体系的“三横一纵”框架结构及其包含的核心维度。",
+    "ground_truth": "“三横”自顶向下依次为：1) 行业能力测试（IOT）；2) 应用能力测试（AOT）；3) 通用能力测试（GOT）。“一纵”为贯穿行业、应用与通用能力的大模型安全能力测试（AI Safety Benchmark）。",
+    "context_evidence": "《基准测试报告.pdf》“‘三横一纵’的框架构成”：“‘三横’自顶向下依次为大模型的行业能力测试（IOT）、应用能力测试（AOT）和通用能力测试（GOT），而‘一纵’为大模型的安全能力测试”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 73,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "请总结大模型推理优化中静态批处理（Static Batching）、动态批处理（Dynamic Batching）与连续批处理（Continuous Batching）的调度机制差异。",
+    "ground_truth": "1) 静态批处理：需等待批次中最慢请求完成，显存浪费大；2) 动态批处理：根据实时队列合并批次，但长短序列混合时利用率不均；3) 连续批处理：采用迭代级调度，完成请求立即移除并加入新请求，GPU 利用率最高。",
+    "context_evidence": "《推理优化报告.pdf》“4.批调度优化”：“静态批处理需等待最慢请求完成；动态批处理根据队列动态调整批次；连续批处理采用迭代级调度，请求完成立即移除并动态加入新请求。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 74,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "比较稀疏检索（BM25）与密集检索（DPR）在语义匹配、关键词精确匹配及 SQuAD/MS MARCO 数据集表现上的优缺点。",
+    "ground_truth": "BM25 擅长关键词精确对齐，在 SQuAD 上 Top-20 命中率（68.8%）略高于 DPR（63.2%），但语义理解弱；DPR 基于稠密向量语义匹配，在 MS MARCO 上 MRR@10（0.338）比 BM25 高 15.1%，适合复杂问答。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》第 3.2 节：“DPR 在 MS MARCO 上 MRR@10 达 0.338 较 BM25 提升 15.1%……在 SQuAD 上，BM25 的 Top-20 命中率（68.8%）略高于 DPR（63.2%）。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 75,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "根据阿里《数据白皮书》，对比 RLHF（基于人类反馈强化学习）与 RLAIF（基于 AI 反馈强化学习）在对齐成本、一致性及拒答率上的异同。",
+    "ground_truth": "RLHF 依赖人工标注，成本高、评判一致性较差，易导致过谨慎拒答；RLAIF 利用大模型自动生成指令与评分，大幅降低标注成本，提升一致性并缓解过度拒答。",
+    "context_evidence": "《数据白皮书.pdf》“第 2.2 节与第 4.5 节”：“SFT+RLHF 成本高、一致性难保障、拒答率高；RLAIF 大幅降低标注成本，也能缓解人工对齐导致模型过度拒答的情况。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 76,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "对比 MQA（多查询注意力）、GQA（分组查询注意力）与 MLA（多潜在注意力）在 KV Cache 压缩上的差异。",
+    "ground_truth": "MQA 让所有注意力头共享一套 KV 缓存（极致压缩但损失精度）；GQA 将头分组共享 KV（折中平衡）；MLA 进一步引入低秩压缩矩阵压缩 KV Cache，兼顾极高压缩率与性能不下降。",
+    "context_evidence": "《推理优化报告.pdf》“3.算法优化”：“MQA 通过共享一套 KV 实现压缩；GQA 在性能与显存间折中；DeepSeek-V2 提出 MLA 进一步引入低秩压缩机制，兼顾压缩与性能。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 77,
+    "question_type": "对比汇总",
+    "difficulty": "简单",
+    "question": "总结向量数据库与传统关系型数据库在数据类型、索引检索方式及应用场景上的核心区别。",
+    "ground_truth": "关系型数据库处理结构化表格数据，依赖 B 树/B+ 树精确匹配；向量数据库处理图片/音视频/文本嵌入后的高维稠密向量（数千维），采用 HNSW/IVF 等最近邻相似度搜索算法。",
+    "context_evidence": "《数据库技术.pdf》第 1.1 节：“传统关系型数据库处理高维向量会导致表臃肿；向量数据库支持高维向量快速相似性搜索和最近邻算法。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 78,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "对比 GPU 加速型数据库与 GPU 内存型数据库在数据传输与驻留机制上的不同。",
+    "ground_truth": "GPU 加速型将 GPU 作为协处理器，数据平时驻留 CPU 内存，计算时通过 PCIe 传输；GPU 内存型将数据全部常驻于 GPU 显存，消除了 PCIe 传输开销，处理速度更快。",
+    "context_evidence": "《数据库技术.pdf》第 1.2 节：“加速型数据库通过 PCIe 将数据从 CPU 送至 GPU；内存型数据库数据全部驻留 GPU 内存，充分发挥 GPU 潜在性能。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 79,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "根据阿里《数据白皮书》，总结中美两国在大模型训练数据供给生态（政府公共数据与社会力量）上的主要差异。",
+    "ground_truth": "美国政府公共数据“应开尽开”，社会力量融合公共与网络数据，以开源为主；我国公共/科研数据开放度不高，数据呈现碎片化，中文开源语料较少（仅占英文 11%），企业倾向自采自用。",
+    "context_evidence": "《数据白皮书.pdf》“第 6 节 中美对比”：“美国政府公共数据应开尽开，社会力量开源共享；我国公共数据开放度不高，中文开源数据集数量仅占英文的 11%。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 80,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "总结大模型推理优化在模型层、引擎层与系统层三个层面的核心技术举措。",
+    "ground_truth": "1) 模型层：模型压缩、MoE 细粒度分割、注意力机制改造（MQA/GQA/MLA/投机采样）；2) 引擎层：PagedAttention 显存优化、并行计算与连续批处理调度；3) 系统层：PD 分离架构与分级存储。",
+    "context_evidence": "《推理优化报告.pdf》“总体框架”：“分别在模型层（MoE/算法优化）、引擎层（显存/计算/调度优化）和系统层（PD分离/分布式架构）开展优化。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 81,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "对比无需分块 RAG 方法（CFIC、LE）与动态分块 RAG 方法（MoG、VGC）的技术特点与局限性。",
+    "ground_truth": "无需分块直接对整体上下文建模，避免预处理语义丢失，计算效率高，但受限于上下文窗口；动态分块根据语义或结构自适应切分，保持语义完整，但增加了预处理复杂度。",
+    "context_evidence": "《RAG综述.pdf》第 2.1 节：“无需分块直接对整体建模，避免分块开销，但受限于上下文窗口；动态分块自适应调整粒度，保持语义完整但步骤较多。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 82,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "总结《基准测试报告》中提出的当前大模型基准测试面临的六大核心问题与挑战。",
+    "ground_truth": "1) 建立规范化评测体系；2) 构建面向产业应用的基准；3) 模型安全能力评估；4) 评测结果与用户体验的差异；5) 测试数据集的“污染”问题；6) 评测数据集的“饱和”问题。",
+    "context_evidence": "《基准测试报告.pdf》“（三）问题与挑战”：“1.建立规范化的评测体系；2.构建面向产业应用的基准；3.模型安全能力评估；4.评测结果与用户体验的差异；5.测试数据集的‘污染’问题；6.评测数据集的‘饱和’问题。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 83,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "比较“方升”自适应动态测试中的全量测试、模块测试与抽样测试三种模式的特点。",
+    "ground_truth": "全量测试遍历所有题目，覆盖全面但成本高；模块测试按特定维度选择题目，针对性强且灵活；抽样测试利用算法精简抽样，成本低、效率高且能有效规避刷榜。",
+    "context_evidence": "《基准测试报告.pdf》“3.灵活抽样，测试方案定制化”：“全量测试针对所有题目遍历；模块测试按特定维度选择；抽样测试用少量数据完成测试，成本低效率高。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 84,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "汇总 RAG 领域常用的四大类评估指标及其代表性指标名称。",
+    "ground_truth": "1) 分类/正确性：Accuracy、EM、F1；2) 生成质量：BLEU、SacreBLEU、ROUGE-L；3) 检索排序：NDCG、MRR、MAP；4) 证据支持与文档覆盖：Evidence Coverage Score。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》“表 18 评估指标汇总”：准确率/EM/F1、BLEU/ROUGE-L、NDCG/MRR/MAP、Evidence Coverage Score。",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 85,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "对比行列并行 HTAP 与单一存储引擎一体化 HTAP 两种技术路线的优缺点与发展现状。",
+    "ground_truth": "行列并行通过 Raft 协议在物理隔离的行存/列存引擎间复制，技术成熟（如 TiDB）；底层一体化存储引擎试图用单套引擎同时承载 OLTP 和 OLAP，但目前理论研究层面性能较差，仍处早期。",
+    "context_evidence": "《数据库技术.pdf》第 1.3 节：“主流是行存储、列存储并行 HTAP（如 TiDB）；底层存储引擎一体化目前理论研究性能效果不佳，仍处早期。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 86,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "对比迭代检索（Iterative Retrieval）与递归检索（Recursive Retrieval）在 RAG 多步优化中的差异。",
+    "ground_truth": "迭代检索采用‘生成-检索闭环反馈’反复补充信息，答案质量高但计算开销随轮数递增；递归检索基于前次结果按树状/层级逐步收窄搜索范围，适合解决复杂嵌套或歧义问题。",
+    "context_evidence": "《大语言模型检索增强生成技术综述.pdf》“表 3 多步优化策略对比”：“迭代检索基于闭环反馈优化后续检索；递归检索基于前阶段结果层次化聚焦。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC03"
+    ]
+  },
+  {
+    "question_id": 87,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "对比提取式提示词压缩器与抽象式提示词压缩器在 RAG 上下文压缩中的机制区别。",
+    "ground_truth": "提取式压缩器通过计算句子与查询的相似度直接筛选保留关键原句；抽象式压缩器（如 RECOMP）利用大模型对筛选后的内容重新综合生成简洁摘要，压缩率更高但需防范生成幻觉。",
+    "context_evidence": "《RAG综述.pdf》第 2.3 节：“提取式压缩器筛选最相关的句子；抽象式压缩器将筛选出的句子综合生成高质量摘要。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 88,
+    "question_type": "对比汇总",
+    "difficulty": "简单",
+    "question": "总结通用大模型训练语料从预训练、SFT/RLHF 到行业大模型三个阶段的语料特征要求（大、齐、专）。",
+    "ground_truth": "1) 基础预训练阶段需要广域泛化的海量数据（特征为“大”）；2) SFT/RLHF 阶段需要高精准度的人类反馈问答（特征为“齐”）；3) 行业大模型阶段需要深度行业专业知识（特征为“专”）。",
+    "context_evidence": "《数据白皮书.pdf》“第 2.2 节”：“第一阶段预训练语料特征为‘大’；第二与第三阶段语料特征为‘齐’；行业大模型语料特征为‘专’。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 89,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "对比 Mooncake 架构与 NVIDIA Dynamo 架构在分布式推理支持上的异同。",
+    "ground_truth": "二者均基于 PD 分离与分布式架构；Mooncake 创新于‘以存换算’与 Conductor 全局 KV Cache 池化；Dynamo 侧重于模块化协同与动态并行加速，二者均显著提升高并发长上下文吞吐量。",
+    "context_evidence": "《推理优化报告.pdf》“Mooncake 与 Dynamo 架构”：“Mooncake 创新于全局调度器与分布式 KV Cache 池；Dynamo 构建模块化协同架构支持分布式推理加速。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 90,
+    "question_type": "对比汇总",
+    "difficulty": "中等",
+    "question": "总结“AI 赋能数据库”（AI for DB）与“数据库赋能 AI”（DB for AI）双向融合的核心方向。",
+    "ground_truth": "AI for DB 利用强化学习与神经网络实现 SQL 自动优化、Join 顺序选择、自动调参及 DBMind 自动运维；DB for AI 通过扩展 SQL 语言、原生 AI 算子和库内特征管理提升模型训练与推理效率。",
+    "context_evidence": "《数据库技术.pdf》第 2 节：“AI for DB 体现于智能化 Join 优化、参数配置与 DBMind 运维；DB for AI 体现于扩展 SQL、原生算子与库内推理。”",
+    "eval_criteria": "完整呈现参考答案中的比较对象、异同和限定条件；不能混淆来源或编造。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 91,
+    "question_type": "拒答",
+    "difficulty": "简单",
+    "question": "“方升”基准测试框架在 2024 年评估了全球多少个大模型？其中 GPT-5 和 Claude 4 在“三横一纵”测试中的得分排名是多少？",
+    "ground_truth": "资料中未提及 GPT-5 或 Claude 4 相关信息，系统应触发拒答。资料中 2024 年初首轮测评被测对象为 30 多家主流大模型（如 GPT-4、Qwen-72B-Chat、LLaMA2 等），问题存在虚构未来模型的前提错误。",
+    "context_evidence": "《基准测试报告.pdf》“三、实践”：“被测对象为 30 多家国内外主流的闭源（商业）大模型和开源大模型，如 GPT-4、Qwen-72B-Chat、LLaMA2 等。”（原文无 GPT-5 或 Claude 4 记载）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 92,
+    "question_type": "拒答",
+    "difficulty": "中等",
+    "question": "根据《RAG综述.pdf》，xRAG 压缩技术在知识密集型任务中将文档压缩了 178 倍，其具体的 FPGA 硬件电路加速图是如何设计的？",
+    "ground_truth": "资料中未提及任何有关 FPGA 硬件电路设计的内容，系统应触发拒答。资料仅记载了 xRAG 采用模态融合技术实现 178 倍压缩与轻量级模态桥接投影器。",
+    "context_evidence": "《RAG综述.pdf》第 2.3 节：“xRAG采用模态融合技术，将文档密集嵌入向量投影至语言模型表示空间，以单标记替代全文，实现178倍压缩”（原文无 FPGA 电路图或硬件设计）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 93,
+    "question_type": "拒答",
+    "difficulty": "简单",
+    "question": "根据《数据库技术.pdf》，我国哪家国内企业自主研发的“星辰向量数据库”在 2023 年全球市场份额排名第一？",
+    "ground_truth": "资料中未提及“星辰向量数据库”，系统应触发拒答。资料中列举的主流向量数据库为 Milvus、Weaviate、Qdrant、Pinecone、Chroma 等，问题存在虚构产品名称的前提错误。",
+    "context_evidence": "《数据库技术.pdf》“表 1 全球主流向量数据库产品”：“Milvus、Weaviate、Qdrant、Pinecone、Chroma”（原文无“星辰向量数据库”）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 94,
+    "question_type": "拒答",
+    "difficulty": "困难",
+    "question": "阿里《数据白皮书》中指出，为了完全消除大模型训练中的版权侵权，我国法律明确规定大模型训练禁止使用任何版权书籍，必须 100% 使用合成数据，这一法律条款的具体编号是什么？",
+    "ground_truth": "资料中未提及此法律规定，系统应触发拒答。资料指出大模型对数据的学习属于转换性使用可视为合理使用，并倡导开放共享版权书籍与科研数据，未规定强制 100% 使用合成数据。",
+    "context_evidence": "《数据白皮书.pdf》“第 5.2 节”：“模型对训练数据的学习属于转换性使用……可被视为合理使用；对于有确定性、已经研究清楚的数据类型，要坚决促进利用”（原文无强制作废版权或强制100%合成数据条文）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  },
+  {
+    "question_id": 95,
+    "question_type": "拒答",
+    "difficulty": "简单",
+    "question": "根据《推理优化报告》，DeepSeek 在 2026 年发布的全新“DeepSeek-V5”模型中，其显存占用降低到了 0MB，这一零显存技术是如何在硬件层面实现的？",
+    "ground_truth": "资料中未提及“DeepSeek-V5”或“零显存/0MB 显存”技术，系统应触发拒答。资料记载的是 DeepSeekMoE、DeepSeek-V2（MLA 机制）及 DeepSeek-V3 的相关优化。",
+    "context_evidence": "《推理优化报告.pdf》“DeepSeek 架构方案”：“DeepSeekMoE、DeepSeek-V2（MLA 机制）、DeepSeek-V3”（原文无 DeepSeek-V5 或 0MB 显存描述）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 96,
+    "question_type": "拒答",
+    "difficulty": "中等",
+    "question": "根据《基准测试报告》，美国斯坦福大学 HELM 基准测试在 2024 年对全球 1000 个大模型进行了实时大脑神经元扫描评估，其具体的扫描硬件规格是什么？",
+    "ground_truth": "资料中未提及“大脑神经元扫描”或相关硬件规格，系统应触发拒答。资料中虽然列出了 HELM 基准测试，但其评估方式为标准的语言与任务基准测试。",
+    "context_evidence": "《基准测试报告.pdf》“（二）蓬勃发展的大模型基准测试”：“大模型基准测试体系和工具包括美国斯坦福大学的 HELM 和 HEIM”（原文无大脑神经元扫描等虚构描述）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC02"
+    ]
+  },
+  {
+    "question_id": 97,
+    "question_type": "拒答",
+    "difficulty": "简单",
+    "question": "根据《RAG综述.pdf》，ChatGPT Atlas 浏览器内置了本地量化计算芯片，能够在没有网络连接的情况下离线检索全网所有历史网页，请问该本地知识库容量有多大？",
+    "ground_truth": "资料中未提及 Atlas 浏览器包含本地全网知识库或离线量化芯片，系统应触发拒答。资料明确指出 Atlas 是将用户当前打开的网页、浏览历史和选中的文本作为动态实时的检索源。",
+    "context_evidence": "《RAG综述.pdf》第 3.2 节：“ChatGPTAtlas 是 OpenAI 于 2025 年 10 月发布的首款 AI 原生浏览器……将用户当前打开的网页内容、浏览历史和选中的文本作为动态、实时的检索源。”（前提错误，并非离线存储全网历史）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC01"
+    ]
+  },
+  {
+    "question_id": 98,
+    "question_type": "拒答",
+    "difficulty": "中等",
+    "question": "根据《数据库技术.pdf》，SkinnerDB 使用的蒙特卡洛树搜索（MCTS）方法成功将 SQL 查询延迟降低到了负数（即预知未来查询），这一量子计算算法的数学证明是什么？",
+    "ground_truth": "资料中未提及任何“延迟降低至负数”或“量子计算算法证明”，系统应触发拒答。资料记载 SkinnerDB 利用 MCTS 在每个时间片尝试不同连接顺序以动态优化 Join。",
+    "context_evidence": "《数据库技术.pdf》第 2.1 节：“SkinnerDB 使用基于蒙特卡洛树搜索的方法在每个时间片中尝试不同的连接顺序，并可以动态优化连接顺序”（前提错误）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC05"
+    ]
+  },
+  {
+    "question_id": 99,
+    "question_type": "拒答",
+    "difficulty": "简单",
+    "question": "根据《推理优化报告》，Mooncake 开源项目完全放弃了 GPU，改用纯 CPU 与光子芯片构建，其处理百万 Token 输入的耗时仅为 0.001 毫秒，该光子芯片的型号是什么？",
+    "ground_truth": "资料中未提及“纯 CPU 与光子芯片”或“0.001 毫秒耗时”，系统应触发拒答。资料记载 Mooncake 是基于 GPU/CPU/DRAM/SSD 的分级存储与 PD 分离架构，用于处理大模型推理。",
+    "context_evidence": "《推理优化报告.pdf》“Mooncake 架构方案”：“建立了 HBM-DRAM-SSD 三级动态存储架构……支撑其 80% 以上线上流量”（前提错误，无光子芯片记载）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC04"
+    ]
+  },
+  {
+    "question_id": 100,
+    "question_type": "拒答",
+    "difficulty": "简单",
+    "question": "根据《数据白皮书》，阿里巴巴达摩院推出的 SeaLLM 大模型在预训练阶段专门使用了全套火星文和古埃及象形文字数据集，请问该数据集的样本数量是多少？",
+    "ground_truth": "资料中未提及“火星文”或“古埃及象形文字”，系统应触发拒答。资料记载 SeaLLM 预训练第一阶段保留英、中、泰、越、印尼语，第二阶段专项学习高棉语、老挝语、马来语、缅甸语等东南亚语言。",
+    "context_evidence": "《数据白皮书.pdf》“第 4.7 节”：“SeaLLM……预训练第一阶段只保留英、中、泰、越南、印尼语言；第二阶段筛选高棉语、老挝语、马来语、缅甸语等特定语料”（前提错误）",
+    "eval_criteria": "识别题目中虚构或资料未记载的前提，明确拒绝给出无依据的具体答案；可说明资料实际记载的相关事实。",
+    "reference_context_ids": [
+      "DOC06"
+    ]
+  }
+]

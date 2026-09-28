@@ -96,7 +96,7 @@ class JudgingTests(unittest.TestCase):
         messages = build_judge_messages(sample_item(1))
         system = messages[0]["content"]
         user = messages[1]["content"]
-        self.assertIn("空回答或表示未找到相关内容", system)
+        self.assertIn("只表示未找到相关内容", system)
         self.assertIn("reason 字段控制在 50 字以内", system)
         for expected in ("问题1", "参考答案", "覆盖关键事实", "RAG 回答", "检索证据"):
             self.assertIn(expected, user)
@@ -105,6 +105,44 @@ class JudgingTests(unittest.TestCase):
         self.assertEqual(reason, "理由")
         with self.assertRaises(ValueError):
             parse_judge_json('{"correctness":4,"completeness":2,"relevance":3,"reason":"理由"}')
+
+    def test_refusal_prompt_scores_valid_refusal_separately_from_explanation(self):
+        """拒答题的泛化拒答不能按空回答打零分，也不强制复述参考答案。"""
+        item = sample_item(91)
+        item.update(question_type="拒答", answer="资料中没有找到相关内容。",
+                    ground_truth="资料未记载问题中的虚构内容，应该拒答。")
+        messages = build_judge_messages(item)
+        system = messages[0]["content"]
+        payload = json.loads(messages[1]["content"].split("待评分记录：\n", 1)[1])
+        self.assertEqual(payload["question_type"], "拒答")
+        self.assertIn("correctness=3", system)
+        self.assertIn("completeness=2", system)
+        self.assertIn("不要把‘资料中没有找到相关内容。’当作空回答", system)
+        self.assertNotIn("只表示未找到相关内容，correctness=0", system)
+
+    def test_force_rejudges_only_selected_question_type(self):
+        """按题型强制重判时，其他题型的旧分数和逐题文件保持不变。"""
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            items = root / "items"
+            items.mkdir()
+            factual = sample_item(1, judged=True)
+            refusal = sample_item(2, judged=True)
+            refusal["question_type"] = "拒答"
+            factual_path = items / "factual.json"
+            refusal_path = items / "refusal.json"
+            factual_path.write_text(json.dumps(factual, ensure_ascii=False), encoding="utf-8")
+            refusal_path.write_text(json.dumps(refusal, ensure_ascii=False), encoding="utf-8")
+            before = factual_path.read_bytes()
+            completions = FakeCompletions()
+            client = SimpleNamespace(chat=SimpleNamespace(completions=completions))
+
+            result = judge_directory(root, client, "judge-model", "https://judge.example/v1",
+                                     temperature=0, max_tokens=321, force=True, question_type="拒答")
+            self.assertEqual((result["completed"], result["failed"]), (1, 0))
+            self.assertEqual(len(completions.calls), 1)
+            self.assertEqual(factual_path.read_bytes(), before)
+            self.assertEqual(json.loads(refusal_path.read_text(encoding="utf-8"))["judge"]["model"], "judge-model")
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ faiss-cpu==1.15.1
 bm25s==0.2.14
 jieba==0.42.1
 # 用于调用兼容 OpenAI 协议的云端大模型接口。
-openai==3.14.1
+openai==3.20.0
 # 读取 .env 配置文件，将密钥与业务代码分离。
 python-dotenv==1.2.3
 # HTTP 客户端，用于 MinerU 任务创建、查询以及文件上传和下载。

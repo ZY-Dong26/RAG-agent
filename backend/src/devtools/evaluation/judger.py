@@ -35,7 +35,8 @@ def build_judge_messages(item):
     输入：item 是 items/*.json 中的一条逐题记录。
     输出：OpenAI chat 接口需要的 messages 列表（system + user）。
 
-    组装内容：问题、参考答案、评分标准、RAG 回答、检索证据原文。
+    组装内容：题型、问题、参考答案、评分标准、RAG 回答、检索证据原文。
+    拒答题单独说明三维度口径：拒绝编造是正确行为，是否指出错误前提影响完整性。
     裁判只依据这些材料打分，不使用其内部知识。
     """
     evidence = [{"rank": hit.get("metadata", {}).get("rank"),
@@ -44,6 +45,7 @@ def build_judge_messages(item):
                  "score": hit.get("metadata", {}).get("score"),
                  "text": hit.get("text", "")} for hit in item.get("hits", [])]
     payload = {
+        "question_type": item.get("question_type", ""),
         "question": item.get("question", ""),
         "reference_answer": item.get("ground_truth", ""),
         "evaluation_criteria": item.get("eval_criteria", ""),
@@ -57,9 +59,21 @@ def build_judge_messages(item):
         "relevance 衡量是否直接回答问题且没有明显无关内容。"
         "0 表示完全不满足，1 表示少量满足，2 表示大部分满足，3 表示充分满足。"
         "只输出一个 JSON 对象，不要 Markdown、代码围栏或额外文字。"
-        "如果 RAG 回答是空回答或表示未找到相关内容，直接给 correctness=0、completeness=0，reason 不超过一句话。"
         "reason 字段控制在 50 字以内，只写结论，不要展开推理过程。"
     )
+    if item.get("question_type") == "拒答":
+        system += (
+            "本题是拒答题，参考答案中的相关事实用于说明错误前提，不要求 RAG 回答复述这些事实。"
+            "如果回答明确表示资料没有支持问题所问的具体内容，且没有编造答案，correctness=3；"
+            "若编造了无依据的具体结论，correctness=0。"
+            "completeness=3 表示明确指出问题中缺乏依据或错误的具体前提；"
+            "仅笼统回答‘资料中没有找到相关内容。’属于有效但说明不足的拒答，completeness=2。"
+            "直接拒绝回答无依据的问题且无离题内容，relevance=3。"
+            "不要把‘资料中没有找到相关内容。’当作空回答，也不要因为未复述参考答案中的相关事实而扣 correctness。"
+            "真正的空回答仍给 correctness=0、completeness=0。"
+        )
+    else:
+        system += "如果 RAG 回答为空或只表示未找到相关内容，correctness=0、completeness=0。"
     user = ("请返回格式："
             '{"correctness":0,"completeness":0,"relevance":0,"reason":"简明、具体、可复核的理由"}'
             "\n\n待评分记录：\n" + json.dumps(payload, ensure_ascii=False, indent=2))
@@ -125,7 +139,8 @@ def _item_entries(directory):
     return [(paths[str(row["question_id"])], row) for row in rows]
 
 
-def judge_directory(directory, client, model, base_url, temperature, max_tokens, limit=None, force=False):
+def judge_directory(directory, client, model, base_url, temperature, max_tokens, limit=None, force=False,
+                    question_type=None):
     """
     逐题调用裁判模型打分并原子写回 item。
 
@@ -133,7 +148,8 @@ def judge_directory(directory, client, model, base_url, temperature, max_tokens,
         directory: 批次目录路径。
         client: 已初始化的 OpenAI 兼容客户端。
         model / base_url / temperature / max_tokens: 裁判模型调用参数。
-        limit: 本次最多新判几题（试跑用）；force: 忽略已有判分全部重判。
+        limit: 本次最多新判几题（试跑用）；force: 忽略已有判分重判。
+        question_type: 仅处理指定题型；与 force 同用时只重判此题型，其他题目保持原判分。
 
     输出：汇总字典（本次完成/跳过/失败数 + summary）。
 
@@ -155,6 +171,8 @@ def judge_directory(directory, client, model, base_url, temperature, max_tokens,
         entries = _item_entries(directory)
         try:
             for number, (path, item) in enumerate(entries, 1):
+                if question_type is not None and item.get("question_type") != question_type:
+                    continue
                 if _completed_judge(item.get("judge")) and not force:
                     skipped += 1
                     continue

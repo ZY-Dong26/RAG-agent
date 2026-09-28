@@ -51,7 +51,7 @@ scripts/
 
 服务监听 `http://127.0.0.1:8000`，启动时创建本机 SQLite 聊天表、加载索引和 Embedding 并预热 BGE；成功后可访问 `/docs` 查看接口。`GET /api/v1/status` 只读返回就绪状态、向量数量和重排设备；`POST /api/v1/ask` 接收 `{"question":"你的问题","conversation_id":null}`，首次成功问答后创建会话并返回其 ID，后续提问携带该 ID。列表、详情和删除分别使用 `GET /api/v1/conversations`、`GET /api/v1/conversations/{id}`、`DELETE /api/v1/conversations/{id}`。提问会调用已配置的云端回答模型；状态和历史读取不会。当前单进程一次处理一条问答，忙碌时返回 HTTP 429；请勿用多个 worker 重复加载 GPU 模型。Vue 前端通过 Vite 的 `/api` 代理调用此接口；前端启动方法见根目录 README。
 
-若日志显示 `APIConnectionError`，且检索与重排已完成，先检查云端模型连接。Windows 系统代理不可用时，可在 `backend/.env` 设置 `LLM_TRUST_ENV=false` 让回答模型直连；修改后重启 API。
+若日志显示 `APIConnectionError`，且检索与重排已完成，先检查云端模型连接。Windows 系统代理不可用时，可在 `backend/.env` 手动添加 `LLM_TRUST_ENV=false` 让回答模型直连；修改后重启 API。
 
 ## 3. PDF 解析：parse_documents.py
 
@@ -68,7 +68,7 @@ MinerU 原始 ZIP、解压目录和适配缓存保存在 `data/processed/mineru/
 ## 4. 批量评测：evaluate.py
 
 ```powershell
-# 默认跑全量（84 题），结果写入新的时间戳目录
+# 默认跑全量（100 题），结果写入新的时间戳目录；会调用回答模型
 .\.venv\Scripts\python.exe scripts/evaluate.py
 
 # 先校验题目格式与文档映射，不调用模型、不花费用
@@ -84,6 +84,8 @@ MinerU 原始 ZIP、解压目录和适配缓存保存在 `data/processed/mineru/
 | `--top-k N` | BGE 重排后保留前 N 个片段；改 K 必须换新目录 |
 | `--retry-failed` | 重跑状态为 error 的旧题（会再产生费用） |
 | `--dataset` / `--source-map` | 换用自定义评测集与文档映射 |
+
+默认读取 `data/evaluation/testdata.json` 和 `data/evaluation/testdata_sources.json`。这两个文件由新测评集转换而来，保留了题目原文、参考答案和 `context_evidence`；原始 `data/evaluation/test_dataset.json` 保留作核对，不直接用于批量运行。`reference_context_ids` 映射到 `data/raw/` 中的 PDF 文件名，用于文档级检索指标；拒答题的映射仅表示相关资料来源，不表示资料支持题目中的虚构前提。
 
 续跑示例（接着由当前代码创建且尚未跑完的批次）：
 
@@ -115,9 +117,14 @@ MinerU 原始 ZIP、解压目录和适配缓存保存在 `data/processed/mineru/
 # 少量试跑；强制重判会再次产生费用
 .\.venv\Scripts\python.exe scripts/judge.py "data/outputs/evaluation/<批次>" --limit 3
 .\.venv\Scripts\python.exe scripts/judge.py "data/outputs/evaluation/<批次>" --force
+
+# 只重判拒答题，其他题型的已有判分保持不变
+.\.venv\Scripts\python.exe scripts/judge.py "data/outputs/evaluation/<批次>" --question-type 拒答 --force
 ```
 
 裁判温度和最大输出长度在 `src/devtools/evaluation/judge_config.py` 中使用代码默认值；脚本只读取已有 item，并把 0–3 分的正确性、完整性、相关性及理由原子写回 `judge` 字段。随后复用同一 exporter 更新 CSV、逐题报告和判分汇总表。
+
+拒答题使用单独的评分说明：明确不编造无依据答案可获得正确性分，泛泛说“资料中没有找到相关内容”算有效拒答，但因未指出具体错误前提，完整性低于有明确解释的拒答。已有批次的判分不会自动改变；`--question-type 拒答 --force` 只重判拒答题并产生相应裁判模型费用，运行前请保留原结果副本。
 
 ## 7. 调试问答：debug_chat.py
 

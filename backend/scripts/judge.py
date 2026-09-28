@@ -4,13 +4,14 @@ scripts/judge.py —— 用独立裁判模型对已有评测批次自动判分
 职责：
     1. 接收一个已有评测批次目录，逐题调用裁判模型打分。
     2. 不加载检索器、不调用回答模型，只消费 items/*.json 中已有的题目和回答。
-    3. 支持 --limit 少量试跑、--force 全部重判；中断后直接重跑同一命令即可续跑。
+    3. 支持 --limit 少量试跑、--question-type 按题型筛选、--force 重判所选题目；中断后直接重跑同一命令即可续跑。
     4. 判分结束后自动刷新 CSV、报告和 judge_summary.md，并在终端打印汇总表。
 
 用法：
     python scripts/judge.py data/outputs/evaluation/<批次目录>
     python scripts/judge.py data/outputs/evaluation/<批次目录> --limit 3
     python scripts/judge.py data/outputs/evaluation/<批次目录> --force
+    python scripts/judge.py data/outputs/evaluation/<批次目录> --question-type 拒答 --force
 """
 import argparse
 import sys
@@ -27,7 +28,8 @@ def main():
     parser = argparse.ArgumentParser(description="用独立 LLM 对已有 RAG 评测批次自动判分")
     parser.add_argument("batch", type=Path, help="已有评测批次目录")
     parser.add_argument("--limit", type=int, help="本次最多新判多少题，适合少量试跑")
-    parser.add_argument("--force", action="store_true", help="重新判所有题，会再次产生裁判模型费用")
+    parser.add_argument("--force", action="store_true", help="重新判所选题目，会再次产生裁判模型费用")
+    parser.add_argument("--question-type", help="只判指定题型，例如拒答；配合 --force 只重判该题型")
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("limit 必须大于零")
@@ -51,7 +53,7 @@ def main():
         client = OpenAI(api_key=JUDGE_LLM_API_KEY, base_url=JUDGE_LLM_BASE_URL)
     result = judge_directory(args.batch, client, JUDGE_LLM_MODEL, JUDGE_LLM_BASE_URL,
                              temperature=JUDGE_LLM_TEMPERATURE, max_tokens=JUDGE_LLM_MAX_TOKENS,
-                             limit=args.limit, force=args.force)
+                             limit=args.limit, force=args.force, question_type=args.question_type)
     if result["failed"]:
         raise RuntimeError(f"{result['failed']} 道题判分失败；已成功题目已保存，可直接重跑续判")
 
