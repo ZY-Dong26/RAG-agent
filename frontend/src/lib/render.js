@@ -22,9 +22,56 @@ export function prepareCitationMath(text) {
   }).join('\n')
 }
 
-/** Markdown 和公式转 HTML 后统一清理，再交给组件的 v-html。 */
-export function renderMarkdown(text) {
-  return DOMPurify.sanitize(marked.parse(text || '', { breaks: true, gfm: true }))
+/** 只拆分本轮真实存在的 [编号]；原始回答文本不变，供复制时保留引用标记。 */
+export function splitCitationText(text, ranks) {
+  const valid = new Set(ranks.map(Number))
+  const parts = []
+  const pattern = /\[(\d+)\]/g
+  let start = 0
+  for (const match of text.matchAll(pattern)) {
+    const rank = Number(match[1])
+    if (!valid.has(rank)) continue
+    if (match.index > start) parts.push({ text: text.slice(start, match.index) })
+    parts.push({ text: match[0], rank })
+    start = match.index + match[0].length
+  }
+  if (start < text.length) parts.push({ text: text.slice(start) })
+  return parts
+}
+
+/** 已清理的 HTML 中仅替换普通文本节点，避开公式、代码和链接里的方括号。 */
+function superscriptCitations(html, ranks) {
+  if (!ranks.length || typeof document === 'undefined') return html
+  const template = document.createElement('template')
+  template.innerHTML = html
+  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT)
+  const nodes = []
+  while (walker.nextNode()) nodes.push(walker.currentNode)
+  for (const node of nodes) {
+    if (node.parentElement?.closest('a, code, pre, sup, .katex')) continue
+    const parts = splitCitationText(node.textContent || '', ranks)
+    if (!parts.some(part => part.rank !== undefined)) continue
+    const replacement = document.createDocumentFragment()
+    for (const part of parts) {
+      if (part.rank === undefined) {
+        replacement.append(document.createTextNode(part.text))
+      } else {
+        const sup = document.createElement('sup')
+        sup.className = 'citation-ref'
+        sup.setAttribute('aria-label', `引用来源 ${part.rank}`)
+        sup.textContent = part.text
+        replacement.append(sup)
+      }
+    }
+    node.replaceWith(replacement)
+  }
+  return template.innerHTML
+}
+
+/** Markdown 与公式转 HTML 后清理；回答可按本轮引用编号添加上标。 */
+export function renderMarkdown(text, citationRanks = []) {
+  const safeHtml = DOMPurify.sanitize(marked.parse(text || '', { breaks: true, gfm: true }))
+  return superscriptCitations(safeHtml, citationRanks)
 }
 
 /** 引用片段先补独立公式分隔符，再复用回答的安全渲染流程。 */

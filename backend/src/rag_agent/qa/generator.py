@@ -1,4 +1,4 @@
-# generator.py —— 生成层：检索到的chunk上下文 + 用户问题 → 云端LLM → 答案
+# generator.py —— 生成层：检索到的chunk上下文 + 用户问题 → 云端LLM → 完整或流式答案
 # 关键设计：
 #   1. LLM走OpenAI兼容协议：云端大模型（DeepSeek/通义/Kimi/OpenAI等）基本都支持，
 #      切换服务时在 backend/.env 配置 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 三件套
@@ -9,6 +9,26 @@
 from urllib.parse import urlparse
 
 from rag_agent import config
+
+
+def select_prompt_hits(hits, max_chars=None):
+    """按提示词的字符预算返回真正会送入模型的前缀证据。
+
+    输入是重排后的证据列表；输出保留原条目与编号，不修改元数据。遇到首条放不下的
+    证据就停止，和 build_prompt 的整块保留规则一致，供问答编排提前确定公开引用范围。
+    块间换行、问题及系统消息不计入此预算；它不是 Token 预算。
+    """
+    budget = max_chars or config.MAX_CONTEXT_CHARS
+    total = 0
+    selected = []
+    for hit in hits:
+        rank = hit["metadata"].get("rank", "?")
+        block = f"[{rank}] {hit['text'].strip()}"
+        if total + len(block) > budget:
+            break
+        selected.append(hit)
+        total += len(block)
+    return selected
 
 
 class Generator:
@@ -64,18 +84,12 @@ class Generator:
         :param max_chars: 资料总字符上限，遇到第一条放不下的资料即停止，不截断该块，也不再尝试后续块
         :return: messages，[{"role":"system",...}, {"role":"user",...}]
         """
-        max_chars = max_chars or config.MAX_CONTEXT_CHARS
-
-        # 把命中的chunk按排名拼成"编号+正文"的资料块，累计编号和正文长度受 max_chars 限制；块间换行、问题和系统消息不计入此预算
+        # 与问答编排共用选取规则，避免结果引用包含模型未见过的片段。
         blocks = []
-        total = 0
-        for hit in hits:
+        for hit in select_prompt_hits(hits, max_chars):
             rank = hit["metadata"].get("rank", "?")
             block = f"[{rank}] {hit['text'].strip()}"
-            if total + len(block) > max_chars:   # 当前整块放不下就停止追加
-                break
             blocks.append(block)
-            total += len(block)
         context = "\n\n".join(blocks)
 
         # 系统消息：限定只能依据资料回答——这是抑制幻觉的关键
@@ -95,7 +109,7 @@ class Generator:
         """
         生成回答：hits（检索结果） + query → 云端LLM → 答案文本
         :param query: 用户问题
-        :param hits: Retriever.retrieve()的返回列表
+        :param hits: 经重排和证据判断后的最终片段列表
         :return: 回答字符串（可能含[编号]引用标注）
         """
         # 每次调用先清空用量，避免失败时误用上一题的数据；接口未返回 usage 时保留 None。
@@ -117,6 +131,35 @@ class Generator:
             self.last_usage = {name: getattr(usage, name, None) for name in
                                ("prompt_tokens", "completion_tokens", "total_tokens")}
         return response.choices[0].message.content.strip()
+
+    def stream(self, query, hits):
+        """逐块返回回答正文；调用者负责累积完整文本，异常时不产生成功结果。"""
+        self.last_usage = None
+        request = {
+            "model": self.model,
+            "messages": self.build_prompt(query, hits),
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "stream": True,
+        }
+        if self.thinking_supported:
+            request["extra_body"] = {"enable_thinking": self.enable_thinking}
+        stream = self.client.chat.completions.create(**request)
+        try:
+            for chunk in stream:
+                usage = getattr(chunk, "usage", None)
+                if usage is not None:
+                    self.last_usage = {name: getattr(usage, name, None) for name in
+                                       ("prompt_tokens", "completion_tokens", "total_tokens")}
+                choices = getattr(chunk, "choices", None) or []
+                if choices:
+                    content = getattr(choices[0].delta, "content", None)
+                    if content:
+                        yield content
+        finally:
+            close = getattr(stream, "close", None)
+            if close is not None:
+                close()
 
 
 if __name__ == "__main__":

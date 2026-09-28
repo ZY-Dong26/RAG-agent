@@ -2,7 +2,7 @@
 app.py —— FastAPI 应用入口
 
 启动时建立本机聊天表、构造一次 RAGService，并在接收请求前加载索引和模型。
-API 层负责 HTTP 与聊天记录；命令行和 API 均调用 qa.service，不复制检索或生成规则。
+API 层处理 HTTP；问答编排位于 chat.service，SQLite 实现位于 storage.chat_history。
 """
 import logging
 from contextlib import asynccontextmanager
@@ -10,7 +10,7 @@ from threading import Lock
 
 from fastapi import FastAPI
 
-from api.chat_history import ChatHistory, DEFAULT_HISTORY_PATH
+from rag_agent.storage.chat_history import ChatHistory, DEFAULT_HISTORY_PATH
 from api.routes import chat, conversations, status
 
 logger = logging.getLogger("api")
@@ -18,7 +18,7 @@ logger = logging.getLogger("api")
 
 def _default_service_factory():
     """把耗时依赖延迟到服务启动阶段，导入模块和离线测试不会加载模型。"""
-    from rag_agent.qa.service import RAGService
+    from rag_agent.chat.service import RAGService
     return RAGService()
 
 

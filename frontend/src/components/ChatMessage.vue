@@ -1,6 +1,6 @@
 <script setup>
 // ChatMessage.vue —— 展示一条用户消息或助手消息。
-// 助手消息的 pending/error/成功状态互斥；成功时可展开最终引用与分项耗时。
+// 助手消息的等待、流式正文、错误和完成状态互斥；完成后才渲染 Markdown 与公式。
 import { computed, ref } from 'vue'
 import { renderCitation, renderMarkdown } from '../lib/render.js'
 import {
@@ -17,7 +17,10 @@ const timingOpen = ref(false)
 const copied = ref(false)
 
 // 两处 v-html 都来自 render.js，统一完成公式渲染和 HTML 清理。
-const renderedAnswer = computed(() => renderMarkdown(props.message.text))
+const renderedAnswer = computed(() => renderMarkdown(
+  props.message.text,
+  (props.message.citations || []).map((citation, index) => citation.rank ?? index + 1),
+))
 const renderedCitations = computed(() => (props.message.citations || []).map(item => renderCitation(item.text)))
 
 function seconds(value) {
@@ -50,16 +53,18 @@ async function copyAnswer() {
     <div class="assistant-body">
       <div class="assistant-name">RAG Agent</div>
 
-      <!-- 等待、错误、成功三种视图只显示一种；错误不展示空白回答。 -->
+      <!-- 流式增量保持纯文本，避免未闭合的 Markdown/公式反复渲染。 -->
       <div v-if="message.pending" class="pending-state" role="status">
         <span class="thinking-dots"><i></i><i></i><i></i></span>
-        正在检索资料并生成回答…
+        {{ message.stage || '正在检索资料并生成回答…' }}
       </div>
 
       <div v-else-if="message.error" class="message-error" role="alert">
         <AlertCircle :size="17" />
         <span>{{ message.error }}</span>
       </div>
+
+      <div v-else-if="message.streaming" class="answer-content streaming-answer" aria-live="polite">{{ message.text }}</div>
 
       <template v-else>
         <div class="answer-content" v-html="renderedAnswer"></div>

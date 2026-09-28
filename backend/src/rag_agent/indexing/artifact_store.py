@@ -109,8 +109,8 @@ def save_artifact(root, key, documents, chunks, vectors, manifest, postprocess_r
 
         atomic_json(temporary / "documents.json", documents)
         atomic_json(temporary / "chunks.json", chunks)
-        # 后处理产物与向量产物同目录保存，documents.json 继续兼容旧调用方；refined_document.json
-        # 明确表达三阶段边界，postprocess_report.json 则提供规则审计和 fail-open 状态。
+        # 数据清洗产物与向量产物同目录保存，documents.json 继续兼容旧调用方；refined_document.json
+        # 明确表达三阶段边界，兼容文件 postprocess_report.json 提供规则审计和 fail-open 状态。
         if postprocess_report is not None:
             atomic_json(temporary / "refined_document.json", documents)
             atomic_json(temporary / "postprocess_report.json", postprocess_report)
@@ -159,7 +159,7 @@ def load_artifact(root, key):
     required = [directory / "documents.json", directory / "chunks.json", directory / "vectors.npy"]
     optional_names = ("refined_document.json", "postprocess_report.json")
     if any(name in manifest.get("artifacts", {}) for name in optional_names):
-        # 新产物必须同时包含后处理正文和报告，拒绝复用只写完一半的目录。
+        # 新产物必须同时包含清洗后正文和报告，拒绝复用只写完一半的目录。
         required.extend(directory / name for name in optional_names)
     if not all(path.is_file() for path in required):
         raise FileNotFoundError(f"文档向量产物不完整：{key}")

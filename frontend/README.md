@@ -17,6 +17,7 @@ frontend/
     ├── lib/render.js             # 回答与引用的 Markdown/KaTeX 安全渲染
     └── style.css                 # 主题变量、响应式布局和回答样式
 tests/
+├── api-stream.test.js            # SSE 拆包和增量事件的离线测试
 └── render.test.js                # 引用公式预处理的离线测试
 ~~~
 
@@ -25,9 +26,9 @@ tests/
 ## 一次提问如何流转
 
 ~~~text
-输入框 → App.vue 校验并显示等待消息 → api.js POST /api/v1/ask
-      → Vite 代理 → FastAPI → RAGService.ask()
-      → SQLite 原子保存一组问答 → App.vue 写入答案、引用与耗时 → ChatMessage.vue 渲染
+输入框 → App.vue 校验并显示检索状态 → api.js POST /api/v1/ask/stream
+      → Vite 代理 → FastAPI → RAGService.ask_stream()
+      → 逐块显示纯文本 → 完成后 SQLite 原子保存一组问答 → 渲染公式、引用与耗时
 ~~~
 
 前端只发送当前问题和会话 ID，不发送上方的对话历史。首次提问没有 ID，后端在回答成功后创建会话；后续提问归入同一会话。页面启动时加载历史列表，点击后再获取保存时的消息快照。问答失败仅在当前页面显示错误，不保存为完整问答。只有深浅色偏好保存在浏览器 `localStorage`；旧版只存在内存中的对话无法恢复。
@@ -58,7 +59,8 @@ npm run dev
 | 请求 | 用途 | 页面如何使用 |
 |---|---|---|
 | `GET /api/v1/status` | 返回 `ready`、向量数量和重排设备 | 打开页面和每 30 秒查询一次；未就绪时禁用发送 |
-| `POST /api/v1/ask` | 接收 `question` 和可选的 `conversation_id`，返回会话 ID、答案、引用、证据状态和耗时 | 发送后显示等待占位，成功时填入本轮结果 |
+| `POST /api/v1/ask/stream` | 以 SSE 发送检索状态、引用、文本增量和最终结果 | 页面逐块显示回答，收到 `done` 后才视为保存成功 |
+| `POST /api/v1/ask` | 保留的非流式问答接口，返回完整答案和会话 ID | 可供其他客户端使用 |
 | `GET /api/v1/conversations` | 按最近更新时间列出会话摘要 | 页面启动时填充侧栏 |
 | `GET /api/v1/conversations/{id}` | 返回该会话保存的消息和回答快照 | 点击旧会话时读取 |
 | `DELETE /api/v1/conversations/{id}` | 删除会话及消息，不影响索引 | 用户确认后删除 |
@@ -72,12 +74,12 @@ npm run dev
 - 页面会显示多轮消息，但每次仅向后端发送当前问题，现有 RAG 服务不会读取上方对话历史。
 - 示例提问只填入输入框，点击发送才会调用后端及已配置的云端回答模型。
 - 右上角和侧栏显示真实后端状态；未连接时禁用发送。回答中的引用和耗时可展开查看。
-- 当前回答为完成后一次性返回，尚未接入流式输出、模型选择、文件上传或 Agent。
+- 回答以流式纯文本展示，完整结束后再渲染 Markdown 和公式；目前尚未加入模型选择、文件上传或 Agent。
 - 深浅色偏好保存在浏览器本地；对话内容保存在后端 `data/chat_history.sqlite3`，不进入浏览器持久存储。
 
 ## 回答的渲染与安全
 
-`render.js` 用 Marked 和 KaTeX 渲染回答与引用，`nonStandard` 选项允许 `$...$` 紧贴中文。PDF 提取的引用片段有时把 LaTeX 公式单独放在一行，却没有 `$` 分隔符；引用渲染只对这些独立公式行补充分隔符。生成的 HTML 经 DOMPurify 清理后才交给 `v-html`；“复制”按钮复制未渲染的原始回答文本，便于粘贴到笔记或编辑器。引用列表和召回、重排、生成耗时来自同一次 API 响应，展开面板不会再次检索。可在 `frontend/` 运行 `npm test` 检查引用公式预处理。
+`render.js` 用 Marked 和 KaTeX 渲染回答与引用，`nonStandard` 选项允许 `$...$` 紧贴中文。PDF 提取的引用片段有时把 LaTeX 公式单独放在一行，却没有 `$` 分隔符；引用渲染只对这些独立公式行补充分隔符。回答完成后，正文中与本轮来源对应的 `[编号]` 显示为小号上标；公式、代码和链接中的方括号不处理。生成的 HTML 经 DOMPurify 清理后才交给 `v-html`；“复制”按钮复制未渲染的原始回答文本，便于粘贴到笔记或编辑器。引用列表和召回、重排、生成耗时来自同一次 API 响应，展开面板不会再次检索。可在 `frontend/` 运行 `npm test` 检查引用渲染辅助逻辑。
 
 ## 排查顺序
 

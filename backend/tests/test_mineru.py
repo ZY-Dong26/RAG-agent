@@ -344,7 +344,7 @@ class AdapterTests(unittest.TestCase):
             self.assertEqual(stats['page_source'], 'preproc_blocks')
 
     def test_empty_page_stats_and_unknown_schema(self):
-        """完整两页中只有一页有正文时报告空页；未知类型保留给后处理审计。"""
+        """完整两页中只有一页有正文时报告空页；未知类型保留给数据清洗审计。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); z = root/'a.zip'
             z.write_bytes(archive(blocks=[{'type':'text','page_idx':0,'text':'body'}]))

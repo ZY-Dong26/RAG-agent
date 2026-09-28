@@ -5,13 +5,13 @@
 ```text
 tests/
 ├── test_mineru.py            # 模拟云端任务、缓存恢复、鉴权与解析验收
-├── test_postprocessor.py     # 页眉页脚、跨页段落、标题路径、审计与 fail-open
+├── test_cleaning.py          # 页眉页脚、跨页段落、标题路径、审计与 fail-open
 ├── test_section_chunker.py   # 章节组合、公式/表格保护、元数据、回退与完整性
 ├── test_index_publication.py # 向量产物复用、部分成功与索引发布保护
 ├── test_bm25_store.py       # 中文分词、BM25 持久化与损坏检测
 ├── test_hybrid_retrieval.py # RRF 去重、单路候选与假 BGE 重排
-├── test_qa_service.py       # 预热入口、分项计时、证据门控与生成隔离
-├── test_api.py              # 假服务与临时 SQLite 验证问答、历史恢复、删除和失败保护
+├── test_qa_service.py       # 预热、计时、证据门控、流式生成与引用对齐
+├── test_api.py              # 假服务与临时 SQLite 验证问答、流式事件、持久化和失败保护
 ├── test_chat_history.py     # 聊天数据层事务回滚和问答成组保存
 ├── test_generator_thinking.py # 百炼 Qwen 思考参数及其他服务兼容
 ├── test_retrieval_config.py # 混合检索默认值及模型路径解析

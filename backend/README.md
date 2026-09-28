@@ -1,13 +1,13 @@
 # 后端工程
 
-`backend/` 是 Python 工程，负责 PDF 解析、规则后处理、建库、检索、重排、证据门控、云端回答、SQLite 聊天记录和评测工具。根目录 [项目总览](../README.md) 说明完整使用流程；[前端说明](../frontend/README.md) 说明 Vue 页面。
+`backend/` 是 Python 工程，负责 PDF 解析与数据清洗、建库、检索、重排、证据门控、云端回答、SQLite 聊天记录和评测工具。根目录 [项目总览](../README.md) 说明完整使用流程；[前端说明](../frontend/README.md) 说明 Vue 页面。
 
 ~~~text
 backend/
 ├── scripts/          # 命令行与 FastAPI 启动入口
 ├── src/
-│   ├── rag_agent/     # RAG 核心业务
-│   ├── api/           # HTTP 适配层及独立的 SQLite 聊天记录层
+│   ├── rag_agent/     # 文档、索引、检索、问答和 SQLite 存储
+│   ├── api/           # HTTP 路由、公开格式和 SSE
 │   └── devtools/      # 评测、判分与诊断实现
 ├── tests/            # 使用假模型与临时目录的离线测试
 ├── data/             # 原始 PDF、缓存、索引和评测结果
@@ -95,7 +95,10 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 .\.venv\Scripts\python.exe scripts/serve_api.py
 ```
 
-访问 `http://127.0.0.1:8000/docs` 查看 `GET /api/v1/status`、`POST /api/v1/ask` 和会话列表、详情、删除接口。Vue 前端每次只发送当前问题和 `conversation_id`，不传页面上的对话历史；首次成功问答后才创建会话。记录保存在被 Git 忽略的 `data/chat_history.sqlite3`，路径与保留规则见 [数据目录说明](data/README.md)。页面启动和渲染流程见 [前端说明](../frontend/README.md)。命令行问答入口仍可单独使用，其问答不会写入网页聊天历史。
+网页默认调用 `POST /api/v1/ask/stream`。它以 SSE 发送检索进度、公开引用、文本增量和最终 `done` 结果；失败发送 `error`，不保存未完成的回答。原有 `POST /api/v1/ask` 保留供非流式客户端使用。两个接口共用检索、证据门控和 SQLite 会话记录。
+提示词按 `MAX_CONTEXT_CHARS` 预算选取完整证据块。流式检索事件只预告实际进入提示词的资料；最终响应和聊天快照只保留答案中有效编号对应的引用。模型给出未提供的编号时，最终答案会去掉该编号；若一块资料也放不进预算，则直接拒答，不调用回答模型。
+
+访问 `http://127.0.0.1:8000/docs` 查看状态、普通及流式问答，以及会话列表、详情、删除接口。Vue 前端每次只发送当前问题和 `conversation_id`，不传页面上的对话历史；首次成功问答后才创建会话。记录保存在被 Git 忽略的 `data/chat_history.sqlite3`，路径与保留规则见 [数据目录说明](data/README.md)。页面启动和渲染流程见 [前端说明](../frontend/README.md)。命令行问答入口仍可单独使用，其问答不会写入网页聊天历史。
 
 已有索引且前后端依赖准备好时，也可以在项目根目录运行 [start.ps1](../start.ps1) 同时启动 API 和前端。
 
@@ -107,7 +110,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 
 ## 需要了解的运行规则
 
-- **三阶段处理**：MinerU 原始解析、`rules-v1` 本地后处理、文本切片彼此独立。原始 ZIP 与适配缓存不覆盖；规则版本变化只复用原始缓存重新执行本地后处理，不重新上传 PDF。`rules-v1` 不调用 LLM、不合并跨页表格、只保守处理有编号标题，失败时回退原始文档继续建库。
+- **三阶段处理**：MinerU 原始解析、`rules-v1` 本地数据清洗、文本切片彼此独立。原始 ZIP 与适配缓存不覆盖；规则版本变化只复用原始缓存重新执行本地清洗，不重新上传 PDF。`rules-v1` 不调用 LLM、不合并跨页表格、只保守处理有编号标题，失败时回退原始文档继续建库。
 - **章节感知切块**：连续同章节先组织后切分，短小兄弟章节在不跨主标题和特殊结构边界时合并；正文目标约 1000 字，800–1500 字为主要范围。独立公式不截断，长表格只按行分片并重复图注/表头。每个 chunk 保留章节、页码、来源块 ID 和块类型；单文档产物 `manifest.json` 保存长度分布、短块原因、超长原子块和完整性校验。将 `indexing/chunker.py` 的 `SECTION_AWARE_CHUNKING` 改为 `False` 可回退旧逐块策略。
 - **增量建库**：复用未变化文档的向量，再组装完整候选索引。默认允许部分解析失败；新文件失败时报告未入库，已有文档更新失败时可保留旧版。向量计算或写入异常仍会中止构建。
 - **混合召回**：Dense 与 BM25 各取 30 条，按稳定 `chunk_id` 去重后使用等权 RRF 融合为 20 条，再由 BGE 重排取前 5 条。BM25 使用 `jieba.lcut_for_search()`，同时保留英文缩写、型号、版本号、年份和百分比。

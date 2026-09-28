@@ -8,7 +8,7 @@ import {
 } from '@lucide/vue'
 import ChatMessage from './components/ChatMessage.vue'
 import {
-  askQuestion, deleteConversation as deleteSavedConversation, getConversation,
+  streamQuestion, deleteConversation as deleteSavedConversation, getConversation,
   getStatus, listConversations,
 } from './lib/api.js'
 
@@ -173,7 +173,7 @@ async function refreshStatus() {
 }
 
 /**
- * 发送一次单轮问答。先放入用户消息和等待占位，再请求 POST /api/v1/ask。
+ * 发送一次单轮问答。先放入用户消息和等待占位，再请求 POST /api/v1/ask/stream。
  * 只发送当前问题和会话 ID；成功后后端已保存问答，失败仅在本页显示错误。
  */
 async function sendQuestion() {
@@ -185,14 +185,27 @@ async function sendQuestion() {
 
   // 后端响应可能较慢，先渲染消息与等待状态；sending 同时防止重复提交。
   messages.push({ id: crypto.randomUUID(), role: 'user', text: question })
-  messages.push({ id: crypto.randomUUID(), role: 'assistant', text: '', pending: true })
+  messages.push({ id: crypto.randomUUID(), role: 'assistant', text: '', pending: true, stage: '正在检索资料…' })
   const reply = messages[messages.length - 1]
   draft.value = ''
   sending.value = true
   await scrollToBottom()
 
   try {
-    const result = await askQuestion(question, conversationId)
+    const result = await streamQuestion(question, conversationId, (event, data) => {
+      if (event === 'status') reply.stage = data.message
+      if (event === 'retrieval') {
+        reply.citations = data.citations || []
+        reply.stage = '正在生成回答…'
+      }
+      if (event === 'delta') {
+        reply.pending = false
+        reply.streaming = true
+        reply.text += data.text
+        scrollToBottom()
+      }
+    })
+    reply.streaming = false
     reply.text = result.answer || '本轮没有返回回答。'
     reply.answerable = result.answerable
     reply.reason = result.reason
@@ -210,6 +223,8 @@ async function sendQuestion() {
     }
   } catch (error) {
     reply.error = error.message
+    reply.streaming = false
+    reply.text = ''
     if (error.message.includes('连接后端')) refreshStatus()
   } finally {
     reply.pending = false

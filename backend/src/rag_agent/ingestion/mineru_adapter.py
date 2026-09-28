@@ -138,7 +138,7 @@ def page_local_blocks(pages):
         return '\n'.join(parts)
 
     def page_height(page):
-        """尽量取得页面高度供后处理判断 bbox；字段不稳定时返回 None，由后处理回退到块顺序。"""
+        """尽量取得页面高度供数据清洗判断 bbox；字段不稳定时返回 None，由清洗规则回退到块顺序。"""
         for key in ('page_height', 'height'):
             if isinstance(page.get(key), (int, float)) and page[key] > 0:
                 return page[key]
@@ -150,7 +150,7 @@ def page_local_blocks(pages):
     normalized = []
     for page in pages:
         # 正文以原始页内块为准；从丢弃块补回脚注以及页眉页脚候选。后者不在适配器删除，
-        # 而是交给独立后处理基于全文重复证据标记，避免两页短文档被无条件误删。
+        # 而是交给独立数据清洗基于全文重复证据标记，避免两页短文档被无条件误删。
         raw = page['preproc_blocks']
         if not isinstance(raw, list):
             raise ValidationError('逐页内容块必须为列表')
@@ -173,7 +173,7 @@ def page_local_blocks(pages):
             elif kind in ('image', 'chart'):
                 item['content'] = spans_text(block)
             else:
-                # 未知结构不静默丢弃：保留原始块并提取已有文字。后处理记录类型告警；
+                # 未知结构不静默丢弃：保留原始块并提取已有文字。数据清洗记录类型告警；
                 # 没有文字的未知结构仍留在文档产物中，但不会生成检索 chunk。
                 item['text'] = spans_text(block)
             normalized.append(item)
@@ -243,7 +243,7 @@ def adapt_result(folder, source, expected_pages):
                                            text_value(block.get(kind + '_footnote')),
                                            text_value(block.get('content'))]))
         else:
-            # 透传未知类型及原始字段，不因云端新增类型丢失数据。V1 后处理会记录告警；
+            # 透传未知类型及原始字段，不因云端新增类型丢失数据。V1 清洗会记录告警；
             # 空未知块仍保留在结构化产物中，但不会产生检索文本。
             raw_value = block.get('text', block.get('content', ''))
             value = raw_value if isinstance(raw_value, str) else ''

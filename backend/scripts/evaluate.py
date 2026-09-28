@@ -53,9 +53,9 @@ def main():
         report("[校验通过] 题目字段、题号及文档映射完整")
         return
     from rag_agent.qa.generator import Generator
-    from rag_agent.qa.evidence_policy import EvidencePolicy
-    from rag_agent.qa.reranker import Reranker
-    from rag_agent.qa.retriever import Retriever
+    from rag_agent.retrieval.evidence_policy import EvidencePolicy
+    from rag_agent.retrieval.reranker import Reranker
+    from rag_agent.retrieval.retriever import Retriever
     with stage("加载当前混合索引与本地模型；整个批次只加载一次"):
         retriever = Retriever()
         reranker = Reranker() if config.RERANK_ENABLED else None

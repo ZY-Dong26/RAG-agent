@@ -1,5 +1,5 @@
 """
-postprocessor.py —— MinerU 统一文档记录的本地规则后处理层
+cleaning.py —— MinerU 统一文档记录的本地数据清洗层
 
 职责：
     1. 在 MinerU 适配完成后，对块字段和普通文本做确定性标准化。
@@ -20,7 +20,7 @@ import re
 from rag_agent.common.progress import report as notify
 
 
-POSTPROCESSOR_VERSION = "rules-v1"
+CLEANING_VERSION = "rules-v1"
 
 # 规则参数集中在模块内，V1 不增加环境变量。页眉页脚至少需要三页文档才有足够证据。
 MIN_REPEAT_PAGES = 3
@@ -71,10 +71,10 @@ _CONTINUATION_PREFIXES = ("的", "了", "和", "与", "及", "或", "而", "并"
 
 
 def _new_report(count):
-    """创建字段稳定的审计报告；失败分支也返回同一结构，方便调用方和人工比较。"""
+    """创建字段稳定的审计报告；旧磁盘字段保留以复用现有索引与缓存。"""
     return {
         "schema_version": 1,
-        "postprocessor_version": POSTPROCESSOR_VERSION,
+        "postprocessor_version": CLEANING_VERSION,
         "input_blocks": count,
         "output_blocks": count,
         "normalized_blocks": 0,
@@ -446,9 +446,9 @@ def _validate_document(input_blocks, output_blocks):
             raise ValueError(f"特殊内容数量变化：{block_type}")
 
 
-def postprocess_document(raw_document, source=None):
+def clean_document(raw_document, source=None):
     """
-    对一份 MinerU 适配文档执行 V1 规则后处理。
+    对一份 MinerU 适配文档执行 V1 本地数据清洗。
 
     输入：同一 PDF 的统一文档记录列表；source 只用于简洁进度日志。
     输出：(refined_document, report)。成功时返回已校验的新结构；失败时返回原输入深拷贝，
@@ -457,7 +457,7 @@ def postprocess_document(raw_document, source=None):
     original = copy.deepcopy(raw_document)
     audit = _new_report(len(original) if isinstance(original, list) else 0)
     label = str(source or "未命名文档")
-    notify(f"[后处理] 文档 {label}：开始，共 {audit['input_blocks']} 个块")
+    notify(f"[数据清洗] 文档 {label}：开始，共 {audit['input_blocks']} 个块")
     try:
         if not isinstance(raw_document, list):
             raise ValueError("文档必须是块列表")
@@ -469,15 +469,15 @@ def postprocess_document(raw_document, source=None):
         _assign_section_paths(blocks, audit)
         _validate_document(_prepare_blocks(raw_document, _new_report(len(raw_document))), blocks)
         audit["output_blocks"] = len(blocks)
-        notify(f"[后处理] 页眉 {audit['excluded_headers']} 个，页脚 {audit['excluded_footers']} 个，"
+        notify(f"[数据清洗] 页眉 {audit['excluded_headers']} 个，页脚 {audit['excluded_footers']} 个，"
                f"页码 {audit['excluded_page_numbers']} 个")
-        notify(f"[后处理] 合并跨页段落 {audit['merged_cross_page_paragraphs']} 处，"
+        notify(f"[数据清洗] 合并跨页段落 {audit['merged_cross_page_paragraphs']} 处，"
                f"标题分级 {audit['assigned_title_levels']} 个")
-        notify(f"[后处理] 完成：输出 {len(blocks)} 个块")
+        notify(f"[数据清洗] 完成：输出 {len(blocks)} 个块")
         return blocks, audit
     except Exception as error:
         failed = _new_report(len(original) if isinstance(original, list) else 0)
         failed["fail_open"] = True
         failed["warnings"] = [{"type": "postprocess_failed", "error_type": type(error).__name__}]
-        notify(f"[后处理失败] 文档 {label}：完整性校验失败，已回退原始解析结果")
+        notify(f"[数据清洗失败] 文档 {label}：完整性校验失败，已回退原始解析结果")
         return original, failed

@@ -29,8 +29,8 @@ if __name__ == "__main__":
 
 with stage("加载运行依赖"):
     from rag_agent.qa.generator import Generator
-    from rag_agent.qa.retriever import Retriever
-    from rag_agent.qa.service import RAGService
+    from rag_agent.retrieval.retriever import Retriever
+    from rag_agent.chat.service import RAGService
 
 
 EXIT_WORDS = {"exit", "quit", "q", "退出", "再见"}
@@ -53,7 +53,8 @@ def _ask(question, service, generator, open_report=False):
     try:
         generator.client = RecordingClient(original_client, recorder)
         result = service.ask(question)
-        recorder.record_retrieval(result.hits, result.timing["retrieval_seconds"],
+        # 诊断报告保留全部重排证据；终端的 result.hits 只展示答案真正引用的证据。
+        recorder.record_retrieval(result.retrieval_hits, result.timing["retrieval_seconds"],
                                   recall_seconds=result.timing["recall_seconds"],
                                   rerank_seconds=result.timing["rerank_seconds"],
                                   total_seconds=result.timing["total_seconds"])
@@ -65,7 +66,7 @@ def _ask(question, service, generator, open_report=False):
         raise
     finally:
         generator.client = original_client
-        hits = result.hits if "result" in locals() else []
+        hits = result.retrieval_hits if "result" in locals() else []
         recorder.neighbors = load_neighbor_chunks(PROJECT_ROOT, hits, radius=1)
         _, html_path = write_trace_report(recorder, PROJECT_ROOT / "data/outputs/debug")
         print(f"\n诊断报告: {html_path.resolve()}")

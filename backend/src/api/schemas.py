@@ -2,7 +2,7 @@
 schemas.py —— 浏览器与问答服务之间的稳定数据格式
 
 只返回页面需要的字段，不把 FAISS 元数据、磁盘绝对路径或客户端配置原样暴露给浏览器。
-后续增加流式接口时仍沿用同一份问题和最终结果格式。
+普通接口与流式接口沿用同一份问题和最终结果格式。
 """
 from pydantic import BaseModel, Field, field_validator
 
@@ -50,7 +50,7 @@ class AskResponse(BaseModel):
     conversation_id: str
     answer: str | None
     answerable: bool  # 最终是否回答；LLM 在证据通过后仍可能拒答
-    reason: str | None  # generation_refused 表示生成模型拒答
+    reason: str | None  # generation_refused 为模型拒答；context_budget_empty 为提示词放不下证据
     evidence_status: str  # 仅表示检索证据门控，不代表最终回答
     threshold_calibrated: bool
     citations: list[Citation]

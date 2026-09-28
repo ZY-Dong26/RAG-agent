@@ -3,11 +3,11 @@ import copy
 import unittest
 
 from rag_agent.indexing import chunker
-from rag_agent.ingestion.postprocessor import postprocess_document
+from rag_agent.ingestion.cleaning import clean_document
 
 
 def block(text, block_id, path=None, kind="text", page=1, source="a.pdf", document_id="doc-a"):
-    """构造已经过后处理的最小统一记录。"""
+    """构造已经过数据清洗的最小统一记录。"""
     return {"text": text, "metadata": {
         "source": source, "document_id": document_id, "page": page,
         "page_start": page, "page_end": page, "block_id": block_id,
@@ -140,10 +140,10 @@ class SectionChunkerTests(unittest.TestCase):
         chunks = self.splitter.split_documents([block("正文。" * 600, "body", path)])
         self.assertTrue(all(len(item["text"]) <= chunker.HARD_MAX_CHARS for item in chunks))
 
-    def test_17_postprocessor_marks_only_independent_formula_and_table_atomic(self):
+    def test_17_cleaning_marks_only_independent_formula_and_table_atomic(self):
         raw = [block("行内公式 x+y 仍是正文", "t", kind="text"),
                block("x+y=z", "f", kind="equation"), block("A | B", "tb", kind="table")]
-        refined, report = postprocess_document(raw)
+        refined, report = clean_document(raw)
         self.assertFalse(report["fail_open"])
         self.assertEqual([item["metadata"]["atomic"] for item in refined], [False, True, True])
 

@@ -1,5 +1,6 @@
 """FastAPI 适配层离线测试：假服务替代模型和云端客户端。"""
 import sys
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,6 +18,7 @@ class FakeService:
         self.prepared = 0
         self.questions = []
         self.fail = False
+        self.fail_after_delta = False
         self.retriever = SimpleNamespace(store=SimpleNamespace(
             chunks=[{}, {}], index_path=Path("data/vector_db/generations/version-a/index.faiss")))
         self.reranker = SimpleNamespace(device="cuda")
@@ -39,6 +41,17 @@ class FakeService:
                     "retrieval_seconds": .3, "generation_seconds": .4,
                     "total_seconds": .7},
         )
+
+    def ask_stream(self, question):
+        """模拟检索和两块生成；失败时先输出增量再报错，验证不会保存半截。"""
+        result = self.ask(question)
+        yield "status", {"stage": "retrieving", "message": "正在检索"}
+        yield "retrieval", {"hits": result.hits, "timing": result.timing}
+        yield "delta", {"text": "回答"}
+        if self.fail_after_delta:
+            raise RuntimeError("secret-token https://private.example/signed")
+        yield "delta", {"text": "[1]"}
+        yield "done", result
 
 
 class ApiTests(unittest.TestCase):
@@ -78,6 +91,39 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(data["timing"]["rerank_seconds"], .2)
         self.assertEqual(len(calls), 1)
         self.assertEqual(service.prepared, 1)
+
+    def test_stream_events_save_only_complete_answer(self):
+        """检索和增量按序到达；完成后才有会话 ID 和持久化消息。"""
+        service = FakeService()
+        with TestClient(create_app(lambda: service, history_path=self.history_path)) as client:
+            response = client.post("/api/v1/ask/stream", json={"question": "流式问题"})
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.headers["content-type"].startswith("text/event-stream"))
+            events = []
+            for frame in response.text.strip().split("\n\n"):
+                lines = frame.splitlines()
+                events.append((lines[0][7:], json.loads(lines[1][6:])))
+            self.assertEqual([name for name, _ in events],
+                             ["status", "retrieval", "delta", "delta", "done"])
+            self.assertEqual(events[1][1]["citations"][0]["source"], "a.pdf")
+            self.assertNotIn("internal_path", events[1][1]["citations"][0])
+            conversation_id = events[-1][1]["conversation_id"]
+            detail = client.get(f"/api/v1/conversations/{conversation_id}").json()
+            self.assertEqual([item["text"] for item in detail["messages"]],
+                             ["流式问题", "回答[1]"])
+
+    def test_stream_failure_does_not_save_partial_answer_or_expose_error(self):
+        """模型在已输出增量后失败时，发送安全错误并释放忙碌锁。"""
+        service = FakeService()
+        service.fail_after_delta = True
+        with TestClient(create_app(lambda: service, history_path=self.history_path)) as client:
+            response = client.post("/api/v1/ask/stream", json={"question": "失败"})
+            self.assertIn("event: delta", response.text)
+            self.assertIn("event: error", response.text)
+            self.assertNotIn("secret-token", response.text)
+            self.assertEqual(client.get("/api/v1/conversations").json(), [])
+            service.fail_after_delta = False
+            self.assertEqual(client.post("/api/v1/ask", json={"question": "再次"}).status_code, 200)
 
     def test_blank_question_busy_and_error_are_safe(self):
         """无效输入不调用服务；忙碌与模型错误不泄漏内部异常。"""

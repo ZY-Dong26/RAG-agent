@@ -25,8 +25,8 @@ if __name__ == "__main__":
 
 with stage("加载运行依赖"):
     from rag_agent.qa.generator import Generator
-    from rag_agent.qa.retriever import Retriever
-    from rag_agent.qa.service import RAGService
+    from rag_agent.retrieval.retriever import Retriever
+    from rag_agent.chat.service import RAGService
 
 
 EXIT_WORDS = {"exit", "quit", "q", "退出", "再见"}

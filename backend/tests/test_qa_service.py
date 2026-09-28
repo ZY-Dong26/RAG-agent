@@ -2,11 +2,14 @@
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from rag_agent.qa.evidence_policy import EvidencePolicy, REFUSAL_ANSWER
-from rag_agent.qa.service import RAGService
+from rag_agent.retrieval.evidence_policy import EvidencePolicy, REFUSAL_ANSWER
+from rag_agent.chat.service import RAGService
+from rag_agent import config
+from rag_agent.qa.generator import Generator
 
 
 class FakeRetriever:
@@ -35,6 +38,11 @@ class FakeGenerator:
     def generate(self, question, hits):
         self.calls.append((question, hits))
         return self.answer
+
+    def stream(self, question, hits):
+        self.calls.append((question, hits))
+        for part in (self.answer[:2], self.answer[2:]):
+            yield part
 
 
 def evidence():
@@ -120,6 +128,75 @@ class RAGServiceTests(unittest.TestCase):
         self.assertTrue(result.threshold_calibrated)
         self.assertIsNone(result.reason)
         self.assertEqual(len(generator.calls), 1)
+
+    def test_stream_uses_same_gate_and_final_refusal_rule(self):
+        """流式生成沿用证据门控与最终拒答判定。"""
+        generator = FakeGenerator("资料中没有找到相关内容。")
+        service = RAGService(FakeRetriever(evidence()), FakeReranker(), EvidencePolicy(None), generator)
+        events = list(service.ask_stream("问题"))
+        self.assertEqual([name for name, _ in events],
+                         ["status", "retrieval", "status", "delta", "delta", "done"])
+        self.assertEqual("".join(data["text"] for name, data in events if name == "delta"),
+                         generator.answer)
+        self.assertFalse(events[-1][1].answerable)
+        self.assertEqual(events[-1][1].reason, "generation_refused")
+
+        blocked = RAGService(FakeRetriever([]), FakeReranker(), EvidencePolicy(None), generator)
+        blocked_events = list(blocked.ask_stream("问题"))
+        self.assertEqual([name for name, _ in blocked_events], ["status", "retrieval", "done"])
+        self.assertEqual(len(generator.calls), 1)
+
+    def test_prompt_budget_and_final_citations_match_in_both_modes(self):
+        """只有实际送入模型且被答案引用的片段能进入最终结果与流式引用。"""
+        hits = [
+            {"text": "甲" * 10, "metadata": {"chunk_id": "c1", "source": "a.pdf", "page": 1}},
+            {"text": "乙" * 10, "metadata": {"chunk_id": "c2", "source": "b.pdf", "page": 2}},
+        ]
+        generator = FakeGenerator("依据[1]，误引[2]。")
+        service = RAGService(FakeRetriever(hits), FakeReranker(), EvidencePolicy(None), generator)
+        with patch.object(config, "MAX_CONTEXT_CHARS", 14):
+            result = service.ask("问题")
+            events = list(service.ask_stream("问题"))
+            prompt = Generator.build_prompt("问题", generator.calls[0][1])
+        self.assertIn("[1] " + "甲" * 10, prompt[1]["content"])
+        self.assertNotIn("乙", prompt[1]["content"])
+        self.assertEqual([hit["metadata"]["rank"] for hit in generator.calls[0][1]], [1])
+        self.assertEqual([hit["metadata"]["rank"] for hit in generator.calls[1][1]], [1])
+        self.assertEqual(result.answer, "依据[1]，误引。")
+        self.assertEqual([hit["metadata"]["rank"] for hit in result.hits], [1])
+        self.assertEqual(len(result.retrieval_hits), 2)
+        self.assertEqual([hit["metadata"]["rank"] for hit in events[1][1]["hits"]], [1])
+        self.assertEqual(events[-1][1].answer, result.answer)
+        self.assertEqual([hit["metadata"]["rank"] for hit in events[-1][1].hits], [1])
+
+    def test_empty_prompt_budget_rejects_without_model(self):
+        """首块证据放不进提示词时，不在空资料上生成，也不展示虚假引用。"""
+        generator = FakeGenerator("回答[1]")
+        service = RAGService(FakeRetriever(evidence()), FakeReranker(), EvidencePolicy(None), generator)
+        with patch.object(config, "MAX_CONTEXT_CHARS", 3):
+            result = service.ask("问题")
+            events = list(service.ask_stream("问题"))
+        self.assertEqual(generator.calls, [])
+        self.assertEqual(result.reason, "context_budget_empty")
+        self.assertFalse(result.answerable)
+        self.assertEqual(result.hits, [])
+        self.assertEqual(events[1][1]["hits"], [])
+        self.assertEqual(events[-1][1].reason, "context_budget_empty")
+
+    def test_uncited_prompt_hit_is_not_a_final_citation(self):
+        """流式预告可包含已发送证据，最终结果只保存答案真正引用的编号。"""
+        hits = [
+            {"text": "证据甲", "metadata": {"chunk_id": "c1", "source": "a.pdf"}},
+            {"text": "证据乙", "metadata": {"chunk_id": "c2", "source": "b.pdf"}},
+        ]
+        generator = FakeGenerator("根据资料[2]。")
+        service = RAGService(FakeRetriever(hits), FakeReranker(), EvidencePolicy(None), generator)
+        result = service.ask("问题")
+        events = list(service.ask_stream("问题"))
+        self.assertEqual([hit["metadata"]["rank"] for hit in generator.calls[0][1]], [1, 2])
+        self.assertEqual([hit["metadata"]["rank"] for hit in events[1][1]["hits"]], [1, 2])
+        self.assertEqual([hit["metadata"]["rank"] for hit in result.hits], [2])
+        self.assertEqual([hit["metadata"]["rank"] for hit in events[-1][1].hits], [2])
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ from rag_agent.indexing.artifact_store import (
 )
 from rag_agent.ingestion.mineru_adapter import ADAPTER_VERSION
 from rag_agent.ingestion.mineru_client import MinerUCloud, parse_files
-from rag_agent.ingestion.postprocessor import POSTPROCESSOR_VERSION, postprocess_document
+from rag_agent.ingestion.cleaning import CLEANING_VERSION, clean_document
 from rag_agent.ingestion.mineru_settings import load_settings
 from rag_agent.common.files import atomic_json, exclusive_lock, read_json
 
@@ -79,12 +79,13 @@ def parse_documents(paths=None, resubmit=False):
                            + "；详情见 data/processed/parse_report.json")
     documents, audits = [], []
     for path in paths:
-        refined, audit = postprocess_document(grouped.get(path.name, []), path.name)
+        refined, audit = clean_document(grouped.get(path.name, []), path.name)
         documents.extend(refined)
         audits.append({"source": path.name, **audit})
     atomic_json(config.PROCESSED_DIR / "documents.json", documents)
+    # 既有缓存文件名与 JSON 字段进入签名和产物校验；只改源码术语，不迁移磁盘格式。
     atomic_json(config.PROCESSED_DIR / "postprocess_report.json", {
-        "postprocessor_version": POSTPROCESSOR_VERSION, "documents": audits,
+        "postprocessor_version": CLEANING_VERSION, "documents": audits,
     })
     return documents
 
@@ -110,11 +111,11 @@ def embedding_signature():
 
 
 def pipeline_signature(settings, embedding_id):
-    """组合解析、适配、切块和 Embedding 配置；任一变化都会使旧文档向量失效。"""
+    """组合解析、数据清洗、切块和向量配置；兼容字段名保证旧向量可复用。"""
     return fingerprint({
         "mineru_parameters": settings.parameters(),
         "adapter_version": ADAPTER_VERSION,
-        "postprocessor_version": POSTPROCESSOR_VERSION,
+        "postprocessor_version": CLEANING_VERSION,
         "splitter_version": SPLITTER_VERSION,
         "chunking_rules": chunker.chunking_signature(),
         "chunk_size": config.CHUNK_SIZE,
@@ -314,7 +315,7 @@ def build_index(force=False, strict=False, prune_missing=False):
         # 这里没有逐文档捕获向量计算/产物写入异常；这些异常会终止本次构建，旧索引不变。
         embedder = None
         for identity, item, documents, stats in pending:
-            refined_documents, postprocess_report = postprocess_document(documents, item["path"].name)
+            refined_documents, postprocess_report = clean_document(documents, item["path"].name)
             notify(f"[切块] {item['path'].name}")
             normalized_docs, chunks, chunking_report = _stable_chunks(
                 refined_documents, identity, item["sha256"], item["relative"])
@@ -342,7 +343,7 @@ def build_index(force=False, strict=False, prune_missing=False):
                     "document_id": identity, "source": item["path"].name,
                     "source_path": item["relative"], "source_sha256": item["sha256"],
                     "pipeline_signature": pipeline_id, "embedding_signature": embedding_id,
-                    "postprocessor_version": POSTPROCESSOR_VERSION,
+                    "postprocessor_version": CLEANING_VERSION,
                     "postprocess_fail_open": postprocess_report["fail_open"],
                     "chunker_version": chunker.CHUNKER_VERSION,
                     "chunking_report": chunking_report,

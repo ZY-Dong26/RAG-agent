@@ -1,12 +1,12 @@
-# 文档接入与规则后处理
+# 文档接入与数据清洗
 
 MinerU 文档进入索引前分为三个独立阶段：
 
 1. `mineru_client.py` 获取并缓存云端原始 ZIP；`mineru_adapter.py` 校验页覆盖并转换为项目统一文档记录。
-2. `postprocessor.py` 在本地执行确定性的 `rules-v1` 结构后处理，返回 refined document 和审计报告。
+2. `cleaning.py` 在本地执行确定性的 `rules-v1` 数据清洗，返回清洗后的文档记录和审计报告。
 3. `indexing/chunker.py` 按连续 `section_path` 切片，并跳过 `excluded_from_retrieval=true` 的块。
 
-原始 ZIP、解压目录和适配后的 `documents.json` 保存在 MinerU 解析缓存中，不会被后处理覆盖。建库成功后，单文档产物目录另外保存 `refined_document.json` 和 `postprocess_report.json`，并把它们的 SHA-256 写入 manifest 验收。
+原始 ZIP、解压目录和适配后的 `documents.json` 保存在 MinerU 解析缓存中，不会被清洗覆盖。建库成功后，单文档产物目录另外保存 `refined_document.json` 和 `postprocess_report.json`，并把它们的 SHA-256 写入 manifest 验收。磁盘文件名及 `postprocessor_version` 等已有清单字段保留，以兼容现有缓存和索引，避免纯源码整理触发重建。
 
 ## rules-v1
 

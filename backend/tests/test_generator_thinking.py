@@ -48,6 +48,31 @@ class GeneratorThinkingTests(unittest.TestCase):
             Generator(client=client, model="qwen3.8-27b").generate("问题", [])
         self.assertNotIn("extra_body", completions.requests[0])
 
+    def test_stream_returns_content_deltas_and_closes_response(self):
+        """流式请求沿用思考参数，忽略空增量，并在结束时关闭 SDK 响应。"""
+        class FakeStream:
+            def __init__(self):
+                self.closed = False
+
+            def __iter__(self):
+                for content in (None, "你", "好"):
+                    yield SimpleNamespace(choices=[SimpleNamespace(
+                        delta=SimpleNamespace(content=content))], usage=None)
+
+            def close(self):
+                self.closed = True
+
+        response = FakeStream()
+        requests = []
+        completions = SimpleNamespace(create=lambda **kwargs: (requests.append(kwargs), response)[1])
+        client = SimpleNamespace(chat=SimpleNamespace(completions=completions))
+        with patch.object(config, "LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"):
+            generator = Generator(client=client, model="qwen3.8-27b", enable_thinking=False)
+            self.assertEqual(list(generator.stream("问题", [])), ["你", "好"])
+        self.assertTrue(requests[0]["stream"])
+        self.assertEqual(requests[0]["extra_body"], {"enable_thinking": False})
+        self.assertTrue(response.closed)
+
 
 if __name__ == "__main__":
     unittest.main()

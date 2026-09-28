@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from api.chat_history import ChatHistory
+from rag_agent.storage.chat_history import ChatHistory
 
 
 class ChatHistoryTests(unittest.TestCase):

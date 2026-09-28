@@ -6,8 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from rag_agent.qa.reranker import Reranker
-from rag_agent.qa.retriever import reciprocal_rank_fusion
+from rag_agent.retrieval.reranker import Reranker
+from rag_agent.retrieval.retriever import reciprocal_rank_fusion
 
 
 def hit(chunk_id, route, rank, score):

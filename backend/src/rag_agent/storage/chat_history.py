@@ -11,7 +11,7 @@ from pathlib import Path
 from uuid import uuid4
 
 
-DEFAULT_HISTORY_PATH = Path(__file__).resolve().parents[2] / "data" / "chat_history.sqlite3"
+DEFAULT_HISTORY_PATH = Path(__file__).resolve().parents[3] / "data" / "chat_history.sqlite3"
 
 
 def _now() -> str:
